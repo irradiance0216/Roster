@@ -3,155 +3,180 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Manning Pro: HH:MM Edition</title>
+    <title>Manning Pro: Individual Availability</title>
     <style>
         :root { --primary: #2563eb; --break: #f1f5f9; --text: #1e293b; --success: #10b981; }
-        body { font-family: 'Inter', system-ui, sans-serif; background: #f8fafc; color: var(--text); max-width: 900px; margin: 2rem auto; padding: 1rem; }
+        body { font-family: 'Inter', system-ui, sans-serif; background: #f8fafc; color: var(--text); max-width: 1000px; margin: 2rem auto; padding: 1rem; }
         section { background: white; padding: 1.5rem; border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.05); margin-bottom: 1.5rem; }
         .input-grid { display: grid; grid-template-columns: 2fr 1.5fr 1.5fr auto; gap: 10px; margin-bottom: 1rem; }
-        label { display: block; font-size: 12px; font-weight: 600; margin-bottom: 4px; color: #64748b; }
+        label { display: block; font-size: 11px; font-weight: 700; text-transform: uppercase; color: #64748b; margin-bottom: 4px; }
         input { padding: 10px; border: 1px solid #cbd5e1; border-radius: 6px; width: 100%; box-sizing: border-box; }
         button { padding: 10px 20px; cursor: pointer; background: var(--primary); color: white; border: none; border-radius: 6px; font-weight: 600; }
-        .pos-item { display: flex; justify-content: space-between; align-items: center; padding: 10px; background: #fdfdfd; border: 1px solid #edf2f7; margin-bottom: 5px; border-radius: 6px; }
+        .list-item { display: flex; justify-content: space-between; align-items: center; padding: 8px 12px; background: #fdfdfd; border: 1px solid #edf2f7; margin-bottom: 5px; border-radius: 6px; font-size: 14px; }
         
         /* Timeline UI */
         .timeline-box { overflow-x: auto; margin-top: 20px; padding-bottom: 10px; }
         .worker-row { display: flex; align-items: center; margin-bottom: 15px; }
-        .worker-id { width: 80px; font-weight: bold; }
-        .track { position: relative; flex-grow: 1; height: 40px; background: var(--break); border-radius: 6px; border: 1px solid #e2e8f0; min-width: 600px; }
-        .block { position: absolute; height: 80%; top: 10%; background: var(--primary); color: white; border-radius: 4px; display: flex; align-items: center; justify-content: center; font-size: 11px; overflow: hidden; white-space: nowrap; }
-        .scale { display: flex; margin-left: 80px; border-top: 2px solid #e2e8f0; padding-top: 8px; min-width: 600px; }
-        .hour-mark { flex: 1; font-size: 11px; color: #64748b; text-align: left; }
+        .worker-id { width: 100px; font-size: 13px; font-weight: bold; color: var(--primary); }
+        .track { position: relative; flex-grow: 1; height: 45px; background: #f1f5f9; border-radius: 8px; border: 1px solid #e2e8f0; min-width: 700px; }
+        .availability-window { position: absolute; height: 100%; background: #fff; border-left: 2px dashed #cbd5e1; border-right: 2px dashed #cbd5e1; z-index: 1; opacity: 0.5; }
+        .block { position: absolute; height: 70%; top: 15%; background: var(--primary); color: white; border-radius: 4px; display: flex; align-items: center; justify-content: center; font-size: 11px; z-index: 2; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        .scale { display: flex; margin-left: 100px; border-top: 2px solid #e2e8f0; padding-top: 8px; min-width: 700px; }
+        .hour-mark { flex: 1; font-size: 11px; color: #64748b; }
     </style>
 </head>
 <body>
 
+    <header style="text-align: center; margin-bottom: 2rem;">
+        <h1 style="margin:0;">Manning Pro</h1>
+        <small>Smart Workload & Break Distribution</small>
+    </header>
+
     <section>
-        <h3>1. Setup Positions</h3>
+        <h3 style="margin-top:0;">1. Team Availability</h3>
         <div class="input-grid">
-            <div><label>Position</label><input type="text" id="pName" placeholder="e.g. Counter"></div>
+            <div><label>Staff Name (Auto-Label)</label><input type="text" id="sName" placeholder="Worker Name"></div>
+            <div><label>Starts Duty</label><input type="time" id="sStart" value="09:00"></div>
+            <div><label>Ends Duty</label><input type="time" id="sEnd" value="17:00"></div>
+            <div style="align-self: end;"><button onclick="addStaff()" style="background: var(--success);">Add Staff</button></div>
+        </div>
+        <div id="staffList"></div>
+    </section>
+
+    <section>
+        <h3>2. Shift Requirements</h3>
+        <div class="input-grid">
+            <div><label>Position</label><input type="text" id="pName" placeholder="e.g. Front Desk"></div>
             <div><label>Start Time</label><input type="time" id="pStart"></div>
             <div><label>End Time</label><input type="time" id="pEnd"></div>
-            <div style="align-self: end;"><button onclick="addItem()">Add</button></div>
+            <div style="align-self: end;"><button onclick="addPosition()">Add Position</button></div>
         </div>
         <div id="pList"></div>
     </section>
 
-    <section>
-        <h3>2. Manning</h3>
-        <div style="display:flex; gap:15px; align-items: flex-end;">
-            <div style="flex: 1;"><label>Available Staff Count</label><input type="number" id="sCount" value="2" min="1"></div>
-            <button onclick="runScheduler()" style="background: var(--success); flex: 2;">Distribute & Generate Roster</button>
-        </div>
-    </section>
+    <div style="text-align: center; margin: 2rem 0;">
+        <button onclick="runScheduler()" style="background: var(--text); padding: 15px 40px; font-size: 16px; width: 100%;">Generate Roster & Calculate Breaks</button>
+    </div>
 
     <section id="resultSection" style="display:none;">
         <div id="timeline" class="timeline-box"></div>
         <div id="rScale" class="scale"></div>
-        <div id="stats" style="margin-top:20px; padding:15px; background: #eff6ff; border-radius: 8px;"></div>
+        <div id="stats" style="margin-top:20px; padding:20px; background: #eff6ff; border-radius: 8px; line-height: 1.6;"></div>
     </section>
 
     <script>
         let positions = [];
+        let staff = [];
 
-        // Converts "HH:MM" string to decimal (e.g., "09:30" -> 9.5)
         function timeToDecimal(t) {
             const [h, m] = t.split(':').map(Number);
             return h + (m / 60);
         }
 
-        // Converts decimal to "HH:MM" string for display
         function decimalToTime(n) {
             const h = Math.floor(n);
             const m = Math.round((n - h) * 60);
             return `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}`;
         }
 
-        function addItem() {
+        function addStaff() {
+            const name = document.getElementById('sName').value || `Worker ${String.fromCharCode(65 + staff.length)}`;
+            const start = timeToDecimal(document.getElementById('sStart').value);
+            const end = timeToDecimal(document.getElementById('sEnd').value);
+            if (end <= start) return alert("Shift end must be after start!");
+            staff.push({ name, start, end });
+            renderStaff();
+        }
+
+        function addPosition() {
             const name = document.getElementById('pName').value;
-            const startStr = document.getElementById('pStart').value;
-            const endStr = document.getElementById('pEnd').value;
-
-            if (name && startStr && endStr) {
-                const start = timeToDecimal(startStr);
-                const end = timeToDecimal(endStr);
-                
-                if (end <= start) return alert("End time must be after start time!");
-
+            const start = timeToDecimal(document.getElementById('pStart').value);
+            const end = timeToDecimal(document.getElementById('pEnd').value);
+            if (name && start < end) {
                 positions.push({ name, start, end, dur: end - start });
                 positions.sort((a, b) => a.start - b.start);
-                updateUI();
+                renderPositions();
             }
         }
 
-        function updateUI() {
-            const list = document.getElementById('pList');
-            list.innerHTML = positions.map((p, i) => `
-                <div class="pos-item">
-                    <span><strong>${p.name}</strong> (${decimalToTime(p.start)} - ${decimalToTime(p.end)})</span>
-                    <button style="background:#f87171; font-size:11px;" onclick="positions.splice(${i},1); updateUI()">Remove</button>
+        function renderStaff() {
+            document.getElementById('staffList').innerHTML = staff.map((s, i) => `
+                <div class="list-item">
+                    <span>👤 <b>${s.name}</b> (${decimalToTime(s.start)} - ${decimalToTime(s.end)})</span>
+                    <button class="remove-btn" style="background:#f87171; border:none; color:white; border-radius:4px;" onclick="staff.splice(${i},1); renderStaff()">×</button>
+                </div>
+            `).join('');
+        }
+
+        function renderPositions() {
+            document.getElementById('pList').innerHTML = positions.map((p, i) => `
+                <div class="list-item">
+                    <span>📍 <b>${p.name}</b> (${decimalToTime(p.start)} - ${decimalToTime(p.end)})</span>
+                    <button class="remove-btn" style="background:#f87171; border:none; color:white; border-radius:4px;" onclick="positions.splice(${i},1); renderPositions()">×</button>
                 </div>
             `).join('');
         }
 
         function runScheduler() {
-            const count = parseInt(document.getElementById('sCount').value);
-            if (positions.length === 0) return;
+            if (staff.length === 0 || positions.length === 0) return alert("Add staff and positions first!");
 
             const container = document.getElementById('timeline');
             const scale = document.getElementById('rScale');
-            container.innerHTML = '';
-            scale.innerHTML = '';
+            container.innerHTML = ''; scale.innerHTML = '';
 
-            const dayStart = Math.floor(Math.min(...positions.map(p => p.start)));
-            const dayEnd = Math.ceil(Math.max(...positions.map(p => p.end)));
+            const dayStart = Math.floor(Math.min(...staff.map(s => s.start), ...positions.map(p => p.start)));
+            const dayEnd = Math.ceil(Math.max(...staff.map(s => s.end), ...positions.map(p => p.end)));
             const totalSpan = dayEnd - dayStart;
 
-            let workers = Array.from({ length: count }, (_, i) => ({
-                label: String.fromCharCode(65 + i),
-                busyUntil: 0,
-                tasks: []
-            }));
+            // Reset worker tasks
+            staff.forEach(s => { s.tasks = []; s.busyUntil = s.start; });
 
-            // Assigning based on availability
+            // Assignment Logic
             positions.forEach(pos => {
-                let worker = workers.find(w => w.busyUntil <= pos.start);
-                if (worker) {
-                    worker.tasks.push(pos);
-                    worker.busyUntil = pos.end;
+                // Find worker who is: 1. Available for this specific time window, 2. Not busy
+                let candidate = staff.find(s => s.start <= pos.start && s.end >= pos.end && s.busyUntil <= pos.start);
+                if (candidate) {
+                    candidate.tasks.push(pos);
+                    candidate.busyUntil = pos.end;
                 }
             });
 
-            // Render Timeline
-            workers.forEach(w => {
+            // Draw UI
+            staff.forEach(s => {
                 const row = document.createElement('div');
                 row.className = 'worker-row';
-                let blocks = w.tasks.map(t => {
+                
+                // Show availability window (white background on grey track)
+                const availLeft = ((s.start - dayStart) / totalSpan) * 100;
+                const availWidth = ((s.end - s.start) / totalSpan) * 100;
+                let trackHtml = `<div class="availability-window" style="left:${availLeft}%; width:${availWidth}%;"></div>`;
+
+                // Show blocks
+                trackHtml += s.tasks.map(t => {
                     const left = ((t.start - dayStart) / totalSpan) * 100;
                     const width = (t.dur / totalSpan) * 100;
                     return `<div class="block" style="left:${left}%; width:${width}%">${t.name}</div>`;
                 }).join('');
 
-                row.innerHTML = `<div class="worker-id">Staff ${w.label}</div><div class="track">${blocks}</div>`;
+                row.innerHTML = `<div class="worker-id">${s.name}</div><div class="track">${trackHtml}</div>`;
                 container.appendChild(row);
             });
 
-            // Hour marks
             for (let h = dayStart; h <= dayEnd; h++) {
                 scale.innerHTML += `<div class="hour-mark">${h}:00</div>`;
             }
 
-            // Stats Logic
-            const totalWork = positions.reduce((s, p) => s + p.dur, 0);
-            const totalCapacity = count * totalSpan;
-            const avgBreak = (totalCapacity - totalWork) / count;
+            // Stats with 1.5h Break Logic
+            let statsHtml = "<b>Break Distribution Analysis:</b><br>";
+            staff.forEach(s => {
+                const totalWork = s.tasks.reduce((sum, t) => sum + t.dur, 0);
+                const totalDutyTime = s.end - s.start;
+                const breakTime = totalDutyTime - totalWork;
+                const status = breakTime >= 1.5 ? "✅ OK" : "⚠️ Short";
+                statsHtml += `• ${s.name}: ${breakTime.toFixed(2)}h total break (${status})<br>`;
+            });
 
-            document.getElementById('stats').innerHTML = `
-                <b>Daily Breakdown:</b><br>
-                Total Workload: ${totalWork.toFixed(1)}h | Available Staff Time: ${totalCapacity.toFixed(1)}h<br>
-                Average break time: <strong>${avgBreak.toFixed(2)} hours</strong>. 
-                ${avgBreak < 1.5 ? '⚠️ Below 1.5h requirement!' : '✅ Meets break requirements.'}
-            `;
+            document.getElementById('stats').innerHTML = statsHtml;
             document.getElementById('resultSection').style.display = 'block';
         }
     </script>
