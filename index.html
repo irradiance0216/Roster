@@ -3,70 +3,82 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Manning Pro: All-in-One</title>
+    <title>Manning Pro: HH:MM Edition</title>
     <style>
-        :root { --primary: #2563eb; --break: #f1f5f9; --text: #1e293b; }
+        :root { --primary: #2563eb; --break: #f1f5f9; --text: #1e293b; --success: #10b981; }
         body { font-family: 'Inter', system-ui, sans-serif; background: #f8fafc; color: var(--text); max-width: 900px; margin: 2rem auto; padding: 1rem; }
         section { background: white; padding: 1.5rem; border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.05); margin-bottom: 1.5rem; }
-        .input-grid { display: grid; grid-template-columns: 2fr 1fr 1fr auto; gap: 10px; margin-bottom: 1rem; }
-        input { padding: 12px; border: 1px solid #cbd5e1; border-radius: 6px; outline: none; }
-        input:focus { border-color: var(--primary); }
-        button { padding: 10px 20px; cursor: pointer; background: var(--primary); color: white; border: none; border-radius: 6px; font-weight: 600; transition: opacity 0.2s; }
-        button:hover { opacity: 0.9; }
-        .remove-btn { background: #ef4444; padding: 5px 10px; font-size: 12px; }
+        .input-grid { display: grid; grid-template-columns: 2fr 1.5fr 1.5fr auto; gap: 10px; margin-bottom: 1rem; }
+        label { display: block; font-size: 12px; font-weight: 600; margin-bottom: 4px; color: #64748b; }
+        input { padding: 10px; border: 1px solid #cbd5e1; border-radius: 6px; width: 100%; box-sizing: border-box; }
+        button { padding: 10px 20px; cursor: pointer; background: var(--primary); color: white; border: none; border-radius: 6px; font-weight: 600; }
+        .pos-item { display: flex; justify-content: space-between; align-items: center; padding: 10px; background: #fdfdfd; border: 1px solid #edf2f7; margin-bottom: 5px; border-radius: 6px; }
         
         /* Timeline UI */
-        .timeline-box { overflow-x: auto; position: relative; padding: 20px 0; }
-        .worker-row { display: flex; align-items: center; margin-bottom: 12px; position: relative; border-bottom: 1px solid #f1f5f9; padding-bottom: 12px; }
-        .worker-id { width: 80px; font-weight: 800; color: var(--primary); }
-        .track { position: relative; flex-grow: 1; height: 35px; background: var(--break); border-radius: 4px; border: 1px solid #e2e8f0; }
-        .block { position: absolute; height: 100%; background: #3b82f6; color: white; border-radius: 4px; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: bold; box-shadow: inset 0 0 5px rgba(0,0,0,0.1); }
-        .scale { display: flex; margin-left: 80px; border-top: 2px solid #e2e8f0; margin-top: 10px; }
-        .hour-mark { flex: 1; font-size: 11px; color: #64748b; border-left: 1px solid #e2e8f0; padding-left: 4px; }
+        .timeline-box { overflow-x: auto; margin-top: 20px; padding-bottom: 10px; }
+        .worker-row { display: flex; align-items: center; margin-bottom: 15px; }
+        .worker-id { width: 80px; font-weight: bold; }
+        .track { position: relative; flex-grow: 1; height: 40px; background: var(--break); border-radius: 6px; border: 1px solid #e2e8f0; min-width: 600px; }
+        .block { position: absolute; height: 80%; top: 10%; background: var(--primary); color: white; border-radius: 4px; display: flex; align-items: center; justify-content: center; font-size: 11px; overflow: hidden; white-space: nowrap; }
+        .scale { display: flex; margin-left: 80px; border-top: 2px solid #e2e8f0; padding-top: 8px; min-width: 600px; }
+        .hour-mark { flex: 1; font-size: 11px; color: #64748b; text-align: left; }
     </style>
 </head>
 <body>
 
-    <header>
-        <h1 style="margin:0;">Manning Administrator</h1>
-        <p style="color: #64748b; margin-bottom: 20px;">Automated Workload & Break Distribution</p>
-    </header>
-
     <section>
-        <h3>1. Positions Needed</h3>
+        <h3>1. Setup Positions</h3>
         <div class="input-grid">
-            <input type="text" id="pName" placeholder="Position Name">
-            <input type="number" id="pStart" placeholder="Start (24h)">
-            <input type="number" id="pDur" placeholder="Duration (h)">
-            <button onclick="addItem()">Add</button>
+            <div><label>Position</label><input type="text" id="pName" placeholder="e.g. Counter"></div>
+            <div><label>Start Time</label><input type="time" id="pStart"></div>
+            <div><label>End Time</label><input type="time" id="pEnd"></div>
+            <div style="align-self: end;"><button onclick="addItem()">Add</button></div>
         </div>
         <div id="pList"></div>
     </section>
 
     <section>
-        <h3>2. Team Size</h3>
-        <div style="display:flex; gap:10px;">
-            <input type="number" id="sCount" style="width:100px" value="3">
-            <button onclick="runScheduler()" style="flex-grow:1; background:#10b981;">Generate Roster</button>
+        <h3>2. Manning</h3>
+        <div style="display:flex; gap:15px; align-items: flex-end;">
+            <div style="flex: 1;"><label>Available Staff Count</label><input type="number" id="sCount" value="2" min="1"></div>
+            <button onclick="runScheduler()" style="background: var(--success); flex: 2;">Distribute & Generate Roster</button>
         </div>
     </section>
 
     <section id="resultSection" style="display:none;">
-        <h3>Daily Schedule</h3>
-        <div class="timeline-box" id="timeline"></div>
-        <div class="scale" id="rScale"></div>
-        <div id="stats" style="margin-top:20px; padding:15px; background:#f0f9ff; border-radius:8px; font-size: 14px;"></div>
+        <div id="timeline" class="timeline-box"></div>
+        <div id="rScale" class="scale"></div>
+        <div id="stats" style="margin-top:20px; padding:15px; background: #eff6ff; border-radius: 8px;"></div>
     </section>
 
     <script>
         let positions = [];
 
+        // Converts "HH:MM" string to decimal (e.g., "09:30" -> 9.5)
+        function timeToDecimal(t) {
+            const [h, m] = t.split(':').map(Number);
+            return h + (m / 60);
+        }
+
+        // Converts decimal to "HH:MM" string for display
+        function decimalToTime(n) {
+            const h = Math.floor(n);
+            const m = Math.round((n - h) * 60);
+            return `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}`;
+        }
+
         function addItem() {
             const name = document.getElementById('pName').value;
-            const start = parseFloat(document.getElementById('pStart').value);
-            const dur = parseFloat(document.getElementById('pDur').value);
-            if (name && !isNaN(start) && dur) {
-                positions.push({ name, start, end: start + dur, dur });
+            const startStr = document.getElementById('pStart').value;
+            const endStr = document.getElementById('pEnd').value;
+
+            if (name && startStr && endStr) {
+                const start = timeToDecimal(startStr);
+                const end = timeToDecimal(endStr);
+                
+                if (end <= start) return alert("End time must be after start time!");
+
+                positions.push({ name, start, end, dur: end - start });
                 positions.sort((a, b) => a.start - b.start);
                 updateUI();
             }
@@ -75,35 +87,33 @@
         function updateUI() {
             const list = document.getElementById('pList');
             list.innerHTML = positions.map((p, i) => `
-                <div style="display:flex; justify-content:space-between; padding:8px; border-bottom:1px solid #eee;">
-                    <span><strong>${p.name}</strong> (${p.start}:00 - ${p.end}:00)</span>
-                    <button class="remove-btn" onclick="positions.splice(${i},1); updateUI()">Delete</button>
+                <div class="pos-item">
+                    <span><strong>${p.name}</strong> (${decimalToTime(p.start)} - ${decimalToTime(p.end)})</span>
+                    <button style="background:#f87171; font-size:11px;" onclick="positions.splice(${i},1); updateUI()">Remove</button>
                 </div>
             `).join('');
         }
 
         function runScheduler() {
             const count = parseInt(document.getElementById('sCount').value);
-            if (positions.length === 0) return alert("Add some positions first!");
+            if (positions.length === 0) return;
 
             const container = document.getElementById('timeline');
             const scale = document.getElementById('rScale');
-            const stats = document.getElementById('stats');
             container.innerHTML = '';
             scale.innerHTML = '';
 
-            const dayStart = Math.min(...positions.map(p => p.start));
-            const dayEnd = Math.max(...positions.map(p => p.end));
+            const dayStart = Math.floor(Math.min(...positions.map(p => p.start)));
+            const dayEnd = Math.ceil(Math.max(...positions.map(p => p.end)));
             const totalSpan = dayEnd - dayStart;
 
-            // Initialize workers alphabetically
             let workers = Array.from({ length: count }, (_, i) => ({
                 label: String.fromCharCode(65 + i),
-                busyUntil: dayStart,
+                busyUntil: 0,
                 tasks: []
             }));
 
-            // Greedy Assignment logic
+            // Assigning based on availability
             positions.forEach(pos => {
                 let worker = workers.find(w => w.busyUntil <= pos.start);
                 if (worker) {
@@ -112,7 +122,7 @@
                 }
             });
 
-            // Build Timeline
+            // Render Timeline
             workers.forEach(w => {
                 const row = document.createElement('div');
                 row.className = 'worker-row';
@@ -126,21 +136,21 @@
                 container.appendChild(row);
             });
 
-            // Draw Scale
+            // Hour marks
             for (let h = dayStart; h <= dayEnd; h++) {
                 scale.innerHTML += `<div class="hour-mark">${h}:00</div>`;
             }
 
-            // Math for breaks
-            const totalWorkHours = positions.reduce((sum, p) => sum + p.dur, 0);
+            // Stats Logic
+            const totalWork = positions.reduce((s, p) => s + p.dur, 0);
             const totalCapacity = count * totalSpan;
-            const avgBreak = (totalCapacity - totalWorkHours) / count;
+            const avgBreak = (totalCapacity - totalWork) / count;
 
-            stats.innerHTML = `
-                <b>Analytics:</b><br>
-                • Minimum break of 1.5h met? ${avgBreak >= 1.5 ? '✅ Yes' : '⚠️ No'}<br>
-                • Average break per person: <b>${avgBreak.toFixed(2)} hours</b><br>
-                • Surplus hours distributed: ${(avgBreak - 1.5).toFixed(2)}h extra per person.
+            document.getElementById('stats').innerHTML = `
+                <b>Daily Breakdown:</b><br>
+                Total Workload: ${totalWork.toFixed(1)}h | Available Staff Time: ${totalCapacity.toFixed(1)}h<br>
+                Average break time: <strong>${avgBreak.toFixed(2)} hours</strong>. 
+                ${avgBreak < 1.5 ? '⚠️ Below 1.5h requirement!' : '✅ Meets break requirements.'}
             `;
             document.getElementById('resultSection').style.display = 'block';
         }
