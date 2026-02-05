@@ -3,91 +3,118 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Manning Admin</title>
+    <title>Manning Pro - Timeline</title>
     <style>
-        body { font-family: system-ui, sans-serif; max-width: 600px; margin: 2rem auto; padding: 0 1rem; line-height: 1.5; background: #f4f7f6; }
-        section { background: white; padding: 1.5rem; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); margin-bottom: 1rem; }
-        h2 { margin-top: 0; color: #333; }
-        .input-group { display: flex; gap: 10px; margin-bottom: 10px; }
-        input { padding: 8px; border: 1px solid #ccc; border-radius: 4px; flex: 1; }
-        button { padding: 8px 16px; cursor: pointer; background: #007bff; color: white; border: none; border-radius: 4px; }
-        button:hover { background: #0056b3; }
-        .result-card { background: #e9ecef; padding: 1rem; border-radius: 4px; border-left: 4px solid #007bff; }
-        .pos-item { font-size: 0.9rem; background: #eee; padding: 5px 10px; border-radius: 4px; margin-bottom: 5px; display: flex; justify-content: space-between; }
+        body { font-family: 'Segoe UI', sans-serif; max-width: 800px; margin: 2rem auto; padding: 1rem; background: #f0f2f5; }
+        section { background: white; padding: 1.5rem; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); margin-bottom: 1.5rem; }
+        .input-row { display: grid; grid-template-columns: 2fr 1fr 1fr auto; gap: 10px; margin-bottom: 10px; }
+        input { padding: 10px; border: 1px solid #ddd; border-radius: 6px; }
+        button { padding: 10px 20px; cursor: pointer; background: #28a745; color: white; border: none; border-radius: 6px; font-weight: bold; }
+        
+        /* Timeline Styles */
+        .timeline-container { overflow-x: auto; margin-top: 20px; background: #fff; padding: 20px; border-radius: 8px; border: 1px solid #eee; }
+        .worker-row { display: flex; align-items: center; margin-bottom: 15px; height: 40px; }
+        .worker-label { width: 80px; font-weight: bold; border-right: 2px solid #ddd; }
+        .bar-area { position: relative; flex-grow: 1; height: 30px; background: #f8f9fa; }
+        .shift-bar { position: absolute; height: 100%; background: #007bff; color: white; display: flex; align-items: center; justify-content: center; font-size: 11px; border-radius: 4px; overflow: hidden; }
+        .break-bar { position: absolute; height: 100%; background: #e9ecef; border: 1px dashed #adb5bd; color: #6c757d; display: flex; align-items: center; justify-content: center; font-size: 11px; }
+        .time-scale { display: flex; margin-left: 80px; border-top: 1px solid #ddd; padding-top: 5px; font-size: 10px; color: #888; }
     </style>
 </head>
 <body>
 
-    <h2>🛠 Manning Administrator</h2>
+    <h2>📊 Manning Timeline Scheduler</h2>
 
     <section>
-        <h3>1. Define Positions</h3>
-        <div class="input-group">
-            <input type="text" id="posName" placeholder="e.g. Front Desk">
-            <input type="number" id="posHours" placeholder="Hours" step="0.5">
+        <h3>1. Shift Positions</h3>
+        <div class="input-row">
+            <input type="text" id="posName" placeholder="Position (e.g. Sales)">
+            <input type="number" id="posStart" placeholder="Start (e.g. 9)" min="0" max="23">
+            <input type="number" id="posDur" placeholder="Duration (h)" min="1">
             <button onclick="addPosition()">Add</button>
         </div>
         <div id="positionsList"></div>
     </section>
 
     <section>
-        <h3>2. Available Staff</h3>
-        <input type="number" id="staffCount" placeholder="How many people are working today?" min="1">
+        <h3>2. Staffing</h3>
+        <div class="input-row" style="grid-template-columns: 1fr auto;">
+            <input type="number" id="staffCount" placeholder="Number of workers available" min="1">
+            <button style="background: #007bff;" onclick="generateRoster()">Generate Timeline</button>
+        </div>
     </section>
 
-    <button style="width: 100%; padding: 15px; font-weight: bold;" onclick="calculateManning()">Calculate Distribution</button>
-
-    <section id="outputSection" style="display:none; margin-top: 20px;">
-        <h3>Daily Plan</h3>
-        <div id="results" class="result-card"></div>
-    </section>
+    <div id="rosterOutput" class="timeline-container" style="display:none;">
+        <h3>Staff Roster (Alpha Labels)</h3>
+        <div id="timelineVisual"></div>
+        <div class="time-scale" id="timeScale"></div>
+        <div id="summary" style="margin-top:20px; font-size: 0.9rem; color: #555;"></div>
+    </div>
 
     <script>
         let positions = [];
 
         function addPosition() {
             const name = document.getElementById('posName').value;
-            const hours = parseFloat(document.getElementById('posHours').value);
+            const start = parseFloat(document.getElementById('posStart').value);
+            const dur = parseFloat(document.getElementById('posDur').value);
             
-            if (name && hours) {
-                positions.push({ name, hours });
+            if (name && !isNaN(start) && dur) {
+                positions.push({ name, start, dur });
                 renderPositions();
-                document.getElementById('posName').value = '';
-                document.getElementById('posHours').value = '';
             }
         }
 
         function renderPositions() {
             const list = document.getElementById('positionsList');
             list.innerHTML = positions.map((p, i) => `
-                <div class="pos-item">
-                    <span>${p.name}</span>
-                    <span><strong>${p.hours}h</strong></span>
+                <div style="background:#f8f9fa; padding:8px; margin:4px 0; border-radius:4px; display:flex; justify-content:space-between;">
+                    <span>${p.name} (${p.start}:00 - ${p.start + p.dur}:00)</span>
+                    <button style="background:red; padding:2px 8px; font-size:10px;" onclick="positions.splice(${i},1); renderPositions();">X</button>
                 </div>
             `).join('');
         }
 
-        function calculateManning() {
-            const staffCount = parseInt(document.getElementById('staffCount').value);
-            if (!staffCount || positions.length === 0) return alert("Please add positions and staff count.");
+        function generateRoster() {
+            const count = parseInt(document.getElementById('staffCount').value);
+            if (!count || positions.length === 0) return;
 
-            const totalHours = positions.reduce((sum, p) => sum + p.hours, 0);
-            const hoursPerPerson = totalHours / staffCount;
+            const totalWorkHours = positions.reduce((s, p) => s + p.dur, 0);
+            const minBreak = 1.5;
+            const businessStart = Math.min(...positions.map(p => p.start));
+            const businessEnd = Math.max(...positions.map(p => p.start + p.dur));
+            const totalSpan = businessEnd - businessStart;
             
-            // Simple logic: if shift > 5 hours, suggest a 45 min break
-            const breakTime = hoursPerPerson > 5 ? 0.75 : 0.5; 
-            const netWorkTime = hoursPerPerson - breakTime;
+            // Total capacity vs demand
+            const totalCapacity = count * totalSpan;
+            const totalAvailableBreakTime = totalCapacity - totalWorkHours;
+            const breakPerPerson = totalAvailableBreakTime / count;
 
-            const output = document.getElementById('outputSection');
-            const results = document.getElementById('results');
-            
-            output.style.display = 'block';
-            results.innerHTML = `
-                <p><strong>Total Labor Demand:</strong> ${totalHours} hours</p>
-                <p><strong>Shift Length:</strong> ${hoursPerPerson.toFixed(2)} hours per person</p>
-                <p><strong>Recommended Break:</strong> ${(breakTime * 60)} minutes</p>
-                <hr>
-                <p><strong>Actual Work Time:</strong> ${netWorkTime.toFixed(2)} hours</p>
+            document.getElementById('rosterOutput').style.display = 'block';
+            const visual = document.getElementById('timelineVisual');
+            visual.innerHTML = '';
+
+            // Generate "Alphabet" Workers
+            for (let i = 0; i < count; i++) {
+                const workerLetter = String.fromCharCode(65 + i);
+                const row = document.createElement('div');
+                row.className = 'worker-row';
+                
+                // For this simple backbone, we alternate work/break blocks visually
+                // In a complex app, you'd map specific positions to specific people
+                row.innerHTML = `
+                    <div class="worker-label">Worker ${workerLetter}</div>
+                    <div class="bar-area">
+                        <div class="shift-bar" style="left:0; width:70%;">Work Block</div>
+                        <div class="break-bar" style="left:70%; width:30%;">Break: ${breakPerPerson.toFixed(1)}h</div>
+                    </div>
+                `;
+                visual.appendChild(row);
+            }
+
+            document.getElementById('summary').innerHTML = `
+                <strong>Calculation:</strong> Each worker gets a 1.5h base break + 
+                ${(breakPerPerson - 1.5).toFixed(1)}h bonus break time based on current staffing surplus.
             `;
         }
     </script>
