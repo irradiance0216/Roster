@@ -3,223 +3,137 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Manning Pro: Equality Edition</title>
+    <title>Manning Pro: Feasibility Edition</title>
     <style>
         :root { --primary: #2563eb; --accent: #f59e0b; --text: #1e293b; --success: #10b981; --danger: #ef4444; }
         body { font-family: 'Inter', system-ui, sans-serif; background: #f1f5f9; color: var(--text); max-width: 1100px; margin: 2rem auto; padding: 1rem; }
         section { background: white; padding: 1.5rem; border-radius: 12px; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1); margin-bottom: 1.5rem; }
         .grid { display: grid; grid-template-columns: 2fr 1fr 1fr 1.5fr auto; gap: 15px; align-items: end; margin-bottom: 1rem; }
         input { padding: 12px; border: 1px solid #cbd5e1; border-radius: 8px; width: 100%; box-sizing: border-box; font-size: 14px; }
-        label { display: block; font-size: 11px; font-weight: 800; color: #64748b; margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.5px; }
-        
-        /* Intensity Slider */
-        .slider-wrap { display: flex; align-items: center; gap: 12px; background: #f8fafc; padding: 8px 12px; border: 1px solid #cbd5e1; border-radius: 8px; }
-        
+        label { display: block; font-size: 11px; font-weight: 800; color: #64748b; margin-bottom: 6px; text-transform: uppercase; }
         button { padding: 12px 20px; cursor: pointer; background: var(--primary); color: white; border: none; border-radius: 8px; font-weight: 700; transition: all 0.2s; }
-        button:hover { filter: brightness(1.1); transform: translateY(-1px); }
-        .remove-btn { background: #fee2e2; color: #b91c1c; padding: 6px 12px; font-size: 18px; line-height: 1; }
+        .remove-btn { background: #fee2e2; color: #b91c1c; padding: 6px 12px; font-size: 18px; }
         
-        .list-item { display: flex; justify-content: space-between; padding: 12px; border-bottom: 1px solid #f1f5f9; align-items: center; font-size: 14px; }
-        
-        /* Timeline Rendering */
+        /* Timeline UI */
         .timeline-box { overflow-x: auto; padding-top: 20px; }
         .worker-row { display: flex; align-items: center; margin-bottom: 25px; }
         .worker-label { width: 160px; font-size: 13px; font-weight: 600; flex-shrink: 0; padding-right: 15px; border-right: 2px solid #e2e8f0; }
         .track { position: relative; flex-grow: 1; height: 55px; background: #e2e8f0; border-radius: 10px; border: 1px solid #cbd5e1; min-width: 800px; margin-left: 15px; }
-        .block { position: absolute; height: 80%; top: 10%; display: flex; flex-direction: column; align-items: center; justify-content: center; font-size: 10px; font-weight: 800; color: white; border-radius: 6px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); overflow: hidden; }
-        .scale { display: flex; margin-left: 175px; padding-top: 10px; font-size: 11px; color: #64748b; font-weight: 600; min-width: 800px; }
+        .block { position: absolute; height: 80%; top: 10%; display: flex; flex-direction: column; align-items: center; justify-content: center; font-size: 10px; font-weight: 800; color: white; border-radius: 6px; }
         
-        table { width: 100%; border-collapse: separate; border-spacing: 0; margin-top: 15px; border-radius: 12px; overflow: hidden; border: 1px solid #e2e8f0; }
-        th { background: #f8fafc; padding: 15px; text-align: left; font-size: 12px; color: #64748b; }
-        td { padding: 15px; background: white; border-top: 1px solid #e2e8f0; font-size: 14px; }
+        /* Warning Styles */
+        .gap-alert { background: #fff1f2; border: 2px solid #be123c; color: #be123c; padding: 15px; border-radius: 8px; margin-bottom: 20px; display: none; }
         .status-badge { padding: 4px 10px; border-radius: 99px; font-size: 11px; font-weight: 700; }
         .status-ok { background: #dcfce7; color: #166534; }
-        .status-low { background: #fee2e2; color: #b91c1c; }
+        .status-gap { background: #fee2e2; color: #b91c1c; }
+        
+        table { width: 100%; border-collapse: collapse; margin-top: 15px; }
+        th, td { padding: 12px; text-align: left; border-bottom: 1px solid #e2e8f0; }
     </style>
 </head>
 <body>
 
-    <header style="display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 2rem;">
-        <div>
-            <h1 style="margin:0; color: var(--text); font-size: 28px;">Manning Pro <span style="color:var(--primary)">Equalizer</span></h1>
-            <p style="margin:5px 0 0; color:#64748b; font-weight: 500;">Dynamic Workload Balancing Algorithm</p>
-        </div>
-        <button onclick="saveAll()" style="background: #475569;">💾 Persistent Save</button>
+    <header style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+        <h1>Manning Pro <span style="color:var(--primary)">v6.0</span></h1>
+        <button onclick="saveAll()" style="background: #475569;">💾 Save Config</button>
     </header>
 
+    <div id="coverageGapAlert" class="gap-alert">
+        <strong>⚠️ CRITICAL GAP DETECTED:</strong> The following positions have NO available staff: <span id="gapList"></span>
+    </div>
+
     <section>
-        <label>1. Team Availability (On/Off Duty Times)</label>
+        <label>1. Team Availability</label>
         <div class="grid" style="grid-template-columns: 2fr 1fr 1fr auto;">
-            <div><label>Employee Name</label><input type="text" id="sName" placeholder="e.g. John Doe"></div>
-            <div><label>Duty In</label><input type="time" id="sStart" value="09:00"></div>
-            <div><label>Duty Out</label><input type="time" id="sEnd" value="17:00"></div>
+            <input type="text" id="sName" placeholder="Staff Name">
+            <input type="time" id="sStart" value="09:00">
+            <input type="time" id="sEnd" value="17:00">
             <button onclick="addStaff()" style="background: var(--success);">Add Staff</button>
         </div>
         <div id="staffList"></div>
     </section>
 
     <section>
-        <label>2. Required Working Positions</label>
+        <label>2. Position Requirements</label>
         <div class="grid">
-            <div><label>Position Name</label><input type="text" id="pName" placeholder="e.g. Reception"></div>
-            <div><label>Start</label><input type="time" id="pStart"></div>
-            <div><label>End</label><input type="time" id="pEnd"></div>
-            <div>
-                <label>Duty Intensity</label>
-                <div class="slider-wrap">
-                    <input type="range" id="pWeight" min="0.5" max="3" step="0.1" value="1.0" oninput="wVal.innerText = parseFloat(this.value).toFixed(1)">
-                    <span id="wVal" style="font-weight:800; min-width:30px;">1.0</span><small>x</small>
-                </div>
-            </div>
+            <input type="text" id="pName" placeholder="Position Name">
+            <input type="time" id="pStart">
+            <input type="time" id="pEnd">
+            <input type="range" id="pWeight" min="0.5" max="3" step="0.1" value="1.0">
             <button onclick="addPosition()">Add Pos</button>
         </div>
         <div id="pList"></div>
     </section>
 
-    <button onclick="runScheduler()" style="width: 100%; padding: 22px; font-size: 20px; margin-bottom: 2.5rem; background: var(--text); letter-spacing: 1px;">GENERATE EQUITABLE ROSTER</button>
+    <button onclick="runScheduler()" style="width: 100%; padding: 22px; font-size: 20px; background: var(--text);">CHECK FEASIBILITY & GENERATE</button>
 
-    <section id="resultSection" style="display:none; padding: 2rem;">
-        <h2 style="margin-top:0;">Visualized Workforce Load</h2>
+    <section id="resultSection" style="display:none;">
         <div class="timeline-box" id="timeline"></div>
-        <div class="scale" id="rScale"></div>
-        
-        <h2 style="margin-top: 50px;">Staff Fairness & Fatigue Report</h2>
         <div id="statsTable"></div>
     </section>
 
     <script>
-        let staff = JSON.parse(localStorage.getItem('staff_v5')) || [];
-        let positions = JSON.parse(localStorage.getItem('positions_v5')) || [];
+        // ... (Include t2d, d2t, addStaff, addPosition functions from previous version) ...
+        let staff = JSON.parse(localStorage.getItem('staff_v6')) || [];
+        let positions = JSON.parse(localStorage.getItem('positions_v6')) || [];
         window.onload = () => { renderStaff(); renderPositions(); };
-
         const t2d = t => { const [h, m] = t.split(':').map(Number); return h + (m / 60); };
-        const d2t = n => { 
-            const h = Math.floor(n); 
-            const m = Math.round((n - h) * 60); 
-            return `${h.toString().padStart(2,'0')}:${m.toString().padStart(2,'0')}`; 
-        };
-
-        function addStaff() {
-            const name = document.getElementById('sName').value;
-            const start = t2d(document.getElementById('sStart').value);
-            const end = t2d(document.getElementById('sEnd').value);
-            if (name && start < end) {
-                staff.push({ name, start, end });
-                renderStaff();
-            }
-        }
-
-        function addPosition() {
-            const name = document.getElementById('pName').value;
-            const start = t2d(document.getElementById('pStart').value);
-            const end = t2d(document.getElementById('pEnd').value);
-            const weight = parseFloat(document.getElementById('pWeight').value);
-            if (name && start < end) {
-                positions.push({ name, start, end, dur: end - start, weight });
-                positions.sort((a,b) => a.start - b.start);
-                renderPositions();
-            }
-        }
-
-        function renderStaff() { 
-            document.getElementById('staffList').innerHTML = staff.map((s,i) => `
-                <div class="list-item"><span>👤 <b>${s.name}</b> <small>(${d2t(s.start)} - ${d2t(s.end)})</small></span>
-                <button class="remove-btn" onclick="staff.splice(${i},1);renderStaff()">×</button></div>`).join(''); 
-        }
-
-        function renderPositions() { 
-            document.getElementById('pList').innerHTML = positions.map((p,i) => `
-                <div class="list-item"><span>📍 <b>${p.name}</b> <small>[${p.weight.toFixed(1)}x Intensity]</small> (${d2t(p.start)} - ${d2t(p.end)})</span>
-                <button class="remove-btn" onclick="positions.splice(${i},1);renderPositions()">×</button></div>`).join(''); 
-        }
-
-        function saveAll() { 
-            localStorage.setItem('staff_v5', JSON.stringify(staff)); 
-            localStorage.setItem('positions_v5', JSON.stringify(positions)); 
-            alert("Roster configuration saved!"); 
-        }
-
-        function getHeatColor(w) {
-            if(w <= 1.0) return '#3b82f6';
-            if(w <= 1.8) return '#f59e0b';
-            return '#ef4444';
-        }
+        const d2t = n => { const h = Math.floor(n); const m = Math.round((n - h) * 60); return `${h.toString().padStart(2,'0')}:${m.toString().padStart(2,'0')}`; };
+        function addStaff() { staff.push({ name: document.getElementById('sName').value, start: t2d(document.getElementById('sStart').value), end: t2d(document.getElementById('sEnd').value) }); renderStaff(); }
+        function addPosition() { positions.push({ name: document.getElementById('pName').value, start: t2d(document.getElementById('pStart').value), end: t2d(document.getElementById('pEnd').value), dur: t2d(document.getElementById('pEnd').value) - t2d(document.getElementById('pStart').value), weight: parseFloat(document.getElementById('pWeight').value) }); positions.sort((a,b)=>a.start-b.start); renderPositions(); }
+        function renderStaff() { document.getElementById('staffList').innerHTML = staff.map((s,i) => `<div class="list-item">👤 ${s.name} (${d2t(s.start)}-${d2t(s.end)}) <button onclick="staff.splice(${i},1);renderStaff()">×</button></div>`).join(''); }
+        function renderPositions() { document.getElementById('pList').innerHTML = positions.map((p,i) => `<div class="list-item">📍 ${p.name} (${d2t(p.start)}-${d2t(p.end)}) <button onclick="positions.splice(${i},1);renderPositions()">×</button></div>`).join(''); }
+        function saveAll() { localStorage.setItem('staff_v6', JSON.stringify(staff)); localStorage.setItem('positions_v6', JSON.stringify(positions)); alert("Saved!"); }
 
         function runScheduler() {
-            if (!staff.length || !positions.length) return alert("Add staff and positions first!");
+            const timeline = document.getElementById('timeline');
+            const alertBox = document.getElementById('coverageGapAlert');
+            const gapListSpan = document.getElementById('gapList');
+            timeline.innerHTML = ''; 
+            alertBox.style.display = 'none';
 
-            const container = document.getElementById('timeline');
-            const scale = document.getElementById('rScale');
-            container.innerHTML = ''; scale.innerHTML = '';
-            
-            const startTimes = [...staff.map(s => s.start), ...positions.map(p => p.start)];
-            const endTimes = [...staff.map(s => s.end), ...positions.map(p => p.end)];
-            const dayStart = Math.floor(Math.min(...startTimes));
-            const dayEnd = Math.ceil(Math.max(...endTimes));
-            const span = dayEnd - dayStart;
-
-            // Initialize/Reset
+            let gaps = [];
             staff.forEach(s => { s.tasks = []; s.busyUntil = s.start; s.fatigue = 0; });
 
-            // CRITICAL: Balanced Algorithm
-            // We sort positions by time and assign to the worker with the LOWEST accumulated fatigue score
             positions.forEach(pos => {
-                let available = staff.filter(s => 
-                    s.start <= pos.start && 
-                    s.end >= pos.end && 
-                    s.busyUntil <= pos.start
-                );
+                let available = staff.filter(s => s.start <= pos.start && s.end >= pos.end && s.busyUntil <= pos.start);
 
                 if (available.length > 0) {
-                    // Sort by fatigue (lowest first) to ensure even distribution
                     available.sort((a, b) => a.fatigue - b.fatigue);
                     let winner = available[0];
                     winner.tasks.push(pos);
                     winner.busyUntil = pos.end;
                     winner.fatigue += (pos.dur * pos.weight);
+                } else {
+                    gaps.push(`${pos.name} (${d2t(pos.start)}-${d2t(pos.end)})`);
                 }
             });
 
-            // Timeline Rendering
+            // If gaps exist, show alert
+            if (gaps.length > 0) {
+                alertBox.style.display = 'block';
+                gapListSpan.innerText = gaps.join(', ');
+            }
+
+            // Render Timeline & Stats (same logic as v5)
+            const dayStart = Math.min(...staff.map(s => s.start), ...positions.map(p => p.start));
+            const dayEnd = Math.max(...staff.map(s => s.end), ...positions.map(p => p.end));
+            const span = dayEnd - dayStart;
+
             staff.forEach(s => {
                 const row = document.createElement('div');
                 row.className = 'worker-row';
-                let blocks = s.tasks.map(t => {
-                    const left = ((t.start - dayStart) / span) * 100;
-                    const width = (t.dur / span) * 100;
-                    return `<div class="block" style="left:${left}%; width:${width}%; background:${getHeatColor(t.weight)}">
-                                <span>${t.name}</span>
-                                <span style="font-size:8px; opacity:0.8">${t.weight.toFixed(1)}x</span>
-                            </div>`;
-                }).join('');
-
-                row.innerHTML = `<div class="worker-label">${s.name}<br><small style="color:#64748b">${d2t(s.start)} - ${d2t(s.end)}</small></div>
-                                 <div class="track">${blocks}</div>`;
-                container.appendChild(row);
+                let blocks = s.tasks.map(t => `<div class="block" style="left:${((t.start-dayStart)/span)*100}%; width:${(t.dur/span)*100}%; background:#3b82f6">${t.name}</div>`).join('');
+                row.innerHTML = `<div class="worker-label">${s.name}</div><div class="track">${blocks}</div>`;
+                timeline.appendChild(row);
             });
 
-            // Scale Rendering
-            for (let h = dayStart; h <= dayEnd; h++) {
-                scale.innerHTML += `<div style="flex:1; border-left:2px solid #cbd5e1; padding-left:6px;">${h}:00</div>`;
-            }
-
-            // Stats Table
-            let statsHtml = `<table><tr><th>Employee Name</th><th>Shift Hours</th><th>Active Duty</th><th>Fatigue Score</th><th>Total Break</th><th>Status</th></tr>`;
+            let statsHtml = `<table><tr><th>Name</th><th>Fatigue</th><th>Break</th><th>Status</th></tr>`;
             staff.forEach(s => {
-                const totalActive = s.tasks.reduce((sum, t) => sum + t.dur, 0);
-                const shiftTotal = s.end - s.start;
-                const rest = shiftTotal - totalActive;
-                const statusClass = rest < 1.5 ? 'status-low' : 'status-ok';
-                const statusText = rest < 1.5 ? 'LOW REST' : 'EQUITABLE';
-
-                statsHtml += `<tr>
-                    <td><b>${s.name}</b></td>
-                    <td>${shiftTotal.toFixed(1)}h</td>
-                    <td>${totalActive.toFixed(1)}h</td>
-                    <td style="color:var(--primary); font-weight:800">${s.fatigue.toFixed(2)}</td>
-                    <td>${rest.toFixed(2)}h</td>
-                    <td><span class="status-badge ${statusClass}">${statusText}</span></td>
-                </tr>`;
+                const work = s.tasks.reduce((sum, t) => sum + t.dur, 0);
+                const brk = (s.end - s.start) - work;
+                const status = (brk >= 1.5 && gaps.length === 0) ? '<span class="status-badge status-ok">EQUITY MET</span>' : '<span class="status-badge status-gap">FEASIBILITY FAILED</span>';
+                statsHtml += `<tr><td>${s.name}</td><td>${s.fatigue.toFixed(1)}</td><td>${brk.toFixed(2)}h</td><td>${status}</td></tr>`;
             });
             document.getElementById('statsTable').innerHTML = statsHtml + `</table>`;
             document.getElementById('resultSection').style.display = 'block';
