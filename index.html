@@ -1,25 +1,142 @@
-function runScheduler() {
-    const container = document.getElementById('timeline');
-    const scale = document.getElementById('rScale');
-    container.innerHTML = ''; scale.innerHTML = '';
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Manning Pro: Manual Balancer</title>
+    <style>
+        :root { --primary: #2563eb; --accent: #f59e0b; --text: #1e293b; --success: #10b981; }
+        body { font-family: 'Inter', system-ui, sans-serif; background: #f8fafc; color: var(--text); max-width: 1100px; margin: 2rem auto; padding: 1rem; }
+        section { background: white; padding: 1.5rem; border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.05); margin-bottom: 1.5rem; }
+        .grid { display: grid; grid-template-columns: 2fr 1fr 1fr 1.5fr auto; gap: 15px; align-items: end; margin-bottom: 1rem; }
+        input, select { padding: 10px; border: 1px solid #cbd5e1; border-radius: 6px; width: 100%; font-size: 14px; }
+        label { display: block; font-size: 11px; font-weight: 700; color: #64748b; margin-bottom: 4px; text-transform: uppercase; }
+        
+        /* Intensity Slider Styling */
+        .slider-container { display: flex; align-items: center; gap: 10px; background: #f1f5f9; padding: 5px 10px; border-radius: 6px; }
+        input[type="range"] { cursor: pointer; }
+        
+        button { padding: 10px 15px; cursor: pointer; background: var(--primary); color: white; border: none; border-radius: 6px; font-weight: 600; }
+        .list-item { display: flex; justify-content: space-between; padding: 12px; border-bottom: 1px solid #f1f5f9; align-items: center; }
+        
+        /* Timeline */
+        .timeline-box { overflow-x: auto; padding-top: 10px; }
+        .worker-row { display: flex; align-items: center; margin-bottom: 20px; border-bottom: 1px solid #f1f5f9; padding-bottom: 10px; }
+        .worker-info { width: 150px; font-size: 13px; }
+        .track { position: relative; flex-grow: 1; height: 50px; background: #e2e8f0; border-radius: 8px; border: 1px solid #cbd5e1; min-width: 700px; }
+        .block { position: absolute; height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; font-size: 10px; font-weight: bold; color: white; border-right: 1px solid rgba(255,255,255,0.3); }
+        .scale { display: flex; margin-left: 150px; padding-top: 8px; font-size: 11px; color: #64748b; }
+        
+        .warn { color: #dc2626; font-weight: bold; }
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+        th, td { text-align: left; padding: 8px; border-bottom: 1px solid #eee; }
+    </style>
+</head>
+<body>
+
+    <header style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+        <div>
+            <h1 style="margin:0; color: var(--primary);">Manning Pro <small style="font-weight:400; color:#64748b;">v3.0</small></h1>
+            <p style="margin:0; font-size: 14px;">Labor Intensity & Break Redistribution</p>
+        </div>
+        <button onclick="saveAll()" style="background: #64748b;">💾 Save Current Setup</button>
+    </header>
+
+    <section>
+        <label>1. Team Members</label>
+        <div class="grid" style="grid-template-columns: 2fr 1fr 1fr auto;">
+            <div><label>Name</label><input type="text" id="sName" placeholder="e.g. Alex"></div>
+            <div><label>Duty Start</label><input type="time" id="sStart" value="09:00"></div>
+            <div><label>Duty End</label><input type="time" id="sEnd" value="17:00"></div>
+            <button onclick="addStaff()" style="background: var(--success);">+ Add Staff</button>
+        </div>
+        <div id="staffList"></div>
+    </section>
+
+    <section>
+        <label>2. Daily Positions</label>
+        <div class="grid">
+            <div><label>Position Name</label><input type="text" id="pName" placeholder="e.g. Kitchen Rush"></div>
+            <div><label>Start</label><input type="time" id="pStart"></div>
+            <div><label>End</label><input type="time" id="pEnd"></div>
+            <div>
+                <label>Intensity (Multiplier)</label>
+                <div class="slider-container">
+                    <input type="range" id="pWeight" min="0.5" max="3" step="0.1" value="1" oninput="weightVal.innerText = this.value">
+                    <span id="weightVal" style="font-weight:bold; min-width:25px;">1</span>x
+                </div>
+            </div>
+            <button onclick="addPosition()">+ Add</button>
+        </div>
+        <div id="pList"></div>
+    </section>
+
+    <button onclick="runScheduler()" style="width: 100%; padding: 18px; font-size: 18px; margin-bottom: 2rem; background: var(--text);">Generate Balanced Roster</button>
+
+    <section id="resultSection" style="display:none;">
+        <div class="timeline-box" id="timeline"></div>
+        <div class="scale" id="rScale"></div>
+        
+        <div style="margin-top: 30px;">
+            <h3>Workload & Break Analysis</h3>
+            <div id="statsTable"></div>
+        </div>
+    </section>
+
+    <script>
+        let staff = JSON.parse(localStorage.getItem('staff')) || [];
+        let positions = JSON.parse(localStorage.getItem('positions')) || [];
+        window.onload = () => { renderStaff(); renderPositions(); };
+
+        const timeToDec = t => { const [h, m] = t.split(':').map(Number); return h + (m / 60); };
+        const decToTime = n => { const h = Math.floor(n); return `${h.toString().padStart(2,'0')}:${Math.round((n-h)*60).toString().padStart(2,'0')}`; };
+
+        function addStaff() {
+            staff.push({ name: document.getElementById('sName').value, start: timeToDec(document.getElementById('sStart').value), end: timeToDec(document.getElementById('sEnd').value) });
+            renderStaff();
+        }
+
+        function addPosition() {
+            positions.push({ 
+                name: document.getElementById('pName').value, 
+                start: timeToDec(document.getElementById('pStart').value), 
+                end: timeToDec(document.getElementById('pEnd').value), 
+                weight: parseFloat(document.getElementById('pWeight').value) 
+            });
+            positions.sort((a,b) => a.start - b.start);
+            renderPositions();
+        }
+
+        function renderStaff() { document.getElementById('staffList').innerHTML = staff.map((s,i) => `<div class="list-item"><span><b>${s.name}</b> (${decToTime(s.start)} - ${decToTime(s.end)})</span><button onclick="staff.splice(${i},1);renderStaff()" style="background:#ef4444; padding:5px 10px;">×</button></div>`).join(''); }
+        function renderPositions() { document.getElementById('pList').innerHTML = positions.map((p,i) => `<div class="list-item"><span><b>${p.name}</b> Intensity: <b>${p.weight}x</b> (${decToTime(p.start)} - ${decToTime(p.end)})</span><button onclick="positions.splice(${i},1);renderPositions()" style="background:#ef4444; padding:5px 10px;">×</button></div>`).join(''); }
+        function saveAll() { localStorage.setItem('staff', JSON.stringify(staff)); localStorage.setItem('positions', JSON.stringify(positions)); alert("Settings saved!"); }
+
+        function getColor(weight) {
+            if(weight <= 1) return '#3b82f6'; // Blue
+            if(weight <= 1.5) return '#f59e0b'; // Orange
+            return '#ef4444'; // Red
+        }
+
+        function runScheduler() {
+        const container = document.getElementById('timeline');
+        const scale = document.getElementById('rScale');
+        container.innerHTML = ''; scale.innerHTML = '';
     
-    const dayStart = Math.min(...staff.map(s => s.start));
-    const dayEnd = Math.max(...staff.map(s => s.end));
-    const span = dayEnd - dayStart;
+        const dayStart = Math.min(...staff.map(s => s.start));
+        const dayEnd = Math.max(...staff.map(s => s.end));
+        const span = dayEnd - dayStart;
 
-    // Reset workers
-    staff.forEach(s => { 
-        s.tasks = []; 
-        s.busyUntil = s.start; 
-        s.fatigue = 0; 
-    });
+        staff.forEach(s => { 
+            s.tasks = []; 
+            s.busyUntil = s.start; 
+            s.fatigue = 0; 
+        });
 
-    // Sort positions by start time to process the day chronologically
-    const sortedPositions = [...positions].sort((a, b) => a.start - b.start);
+        const sortedPositions = [...positions].sort((a, b) => a.start - b.start);
 
-    sortedPositions.forEach(pos => {
+        sortedPositions.forEach(pos => {
         // Find ALL workers who are on duty and not busy
-        let availableWorkers = staff.filter(s => 
+            let availableWorkers = staff.filter(s => 
             s.start <= pos.start && 
             s.end >= pos.end && 
             s.busyUntil <= pos.start
@@ -35,9 +152,7 @@ function runScheduler() {
             bestWorker.fatigue += (pos.end - pos.start) * pos.weight;
         }
     });
-
-    // --- RENDER LOGIC (Keep the same as previous version) ---
-    staff.forEach(s => {
+            staff.forEach(s => {
         const row = document.createElement('div');
         row.className = 'worker-row';
         let trackHtml = '';
@@ -56,15 +171,21 @@ function runScheduler() {
 
     renderStats();
     document.getElementById('resultSection').style.display = 'block';
-}
 
-function renderStats() {
-    let statsHtml = `<table><tr><th>Staff</th><th>Actual Work</th><th>Fatigue Score</th><th>Calculated Break</th><th>Status</th></tr>`;
-    staff.forEach(s => {
-        const work = s.tasks.reduce((sum, t) => sum + (t.end - t.start), 0);
-        const brk = (s.end - s.start) - work;
-        const status = brk < 1.5 ? '<span class="warn">Low Break</span>' : '✅ Healthy';
-        statsHtml += `<tr><td>${s.name}</td><td>${work.toFixed(1)}h</td><td>${s.fatigue.toFixed(1)}</td><td>${brk.toFixed(2)}h</td><td>${status}</td></tr>`;
-    });
-    document.getElementById('statsTable').innerHTML = statsHtml + `</table>`;
-}
+            for (let h = dayStart; h <= dayEnd; h++) {
+                scale.innerHTML += `<div style="flex:1; border-left:1px solid #ddd; padding-left:4px;">${h}:00</div>`;
+            }
+
+            let statsHtml = `<table><tr><th>Staff</th><th>Actual Work</th><th>Fatigue Score</th><th>Calculated Break</th><th>Status</th></tr>`;
+            staff.forEach(s => {
+                const work = s.tasks.reduce((sum, t) => sum + (t.end - t.start), 0);
+                const brk = (s.end - s.start) - work;
+                const status = brk < 1.5 ? '<span class="warn">Low Break</span>' : '✅ Healthy';
+                statsHtml += `<tr><td>${s.name}</td><td>${work.toFixed(1)}h</td><td>${s.fatigue.toFixed(1)}</td><td>${brk.toFixed(2)}h</td><td>${status}</td></tr>`;
+            });
+            document.getElementById('statsTable').innerHTML = statsHtml + `</table><p style="font-size:12px; color:#64748b; margin-top:10px;">* Fatigue Score = Duration × Intensity. Use this to manually swap shifts if one worker's score is significantly higher.</p>`;
+            document.getElementById('resultSection').style.display = 'block';
+        }
+    </script>
+</body>
+</html>
