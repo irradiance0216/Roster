@@ -4,47 +4,183 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Shift Scheduler</title>
-    <link rel="stylesheet" href="style.css">
+    <style>
+        :root {
+            --primary: #4a90e2;
+            --bg: #f4f7f6;
+            --text: #333;
+            --unmanned: #e0e0e0;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            margin: 0;
+            padding: 20px;
+        }
+
+        header { text-align: center; margin-bottom: 30px; }
+
+        #proforma-selection {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            flex-wrap: wrap;
+            margin-bottom: 20px;
+        }
+
+        button {
+            padding: 12px 20px;
+            border: none;
+            border-radius: 8px;
+            background: var(--primary);
+            color: white;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        .table-container {
+            overflow-x: auto;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            margin-top: 20px;
+            display: none; /* Hidden until shift is selected */
+        }
+
+        table { border-collapse: collapse; width: 100%; min-width: 1200px; }
+
+        th, td {
+            border: 1px solid #ddd;
+            padding: 10px;
+            text-align: center;
+            min-width: 100px;
+        }
+
+        /* Sticky Position Column */
+        th:first-child, td:first-child {
+            position: sticky;
+            left: 0;
+            background: #eee;
+            z-index: 2;
+        }
+
+        .unmanned { background-color: var(--unmanned); color: #777; }
+        
+        .summary-card {
+            background: white;
+            padding: 15px;
+            margin-top: 10px;
+            border-radius: 8px;
+            border-left: 5px solid var(--primary);
+        }
+    </style>
 </head>
 <body>
 
     <header>
         <h1>Shift Scheduler ⏳</h1>
-        <p>Select a proforma to begin configuring the shift.</p>
+        <div id="proforma-selection">
+            <button onclick="initShift('07:45', '14:45')">Early (07:45-14:45)</button>
+            <button onclick="initShift('14:45', '21:45')">Afternoon (14:45-21:45)</button>
+            <button onclick="initShift('21:45', '07:45')">Night (21:45-07:45)</button>
+        </div>
     </header>
 
     <main>
-        <section id="proforma-selection">
-            <button onclick="initShift('early')">Early Shift (07:45 - 14:45)</button>
-            <button onclick="initShift('afternoon')">Afternoon Shift (14:45 - 21:45)</button>
-            <button onclick="initShift('night')">Night Shift (21:45 - 07:45)</button>
-        </section>
+        <div id="config-ui" style="display:none; text-align: center;">
+            <input type="text" id="pos-input" placeholder="Position Name (e.g. Desk)">
+            <button onclick="addRow()">+ Add Position</button>
+            <button onclick="generateSummary()" style="background: #27ae60;">Generate Summary</button>
+        </div>
 
-        <section id="config-section" style="display:none;">
-            <div class="controls">
-                <input type="text" id="position-name" placeholder="Enter Position Name">
-                <button onclick="addPosition()">+ Add Position</button>
-            </div>
+        <div class="table-container" id="table-wrap">
+            <table id="main-table">
+                <thead><tr id="header-row"></tr></thead>
+                <tbody id="table-body"></tbody>
+            </table>
+        </div>
 
-            <div class="table-container">
-                <table id="schedule-table">
-                    <thead>
-                        <tr id="time-header">
-                            </tr>
-                    </thead>
-                    <tbody id="position-rows">
-                        </tbody>
-                </table>
-            </div>
-        </section>
-
-        <section id="summary-section" style="display:none;">
+        <section id="summary-section" style="display:none; margin-top: 30px;">
             <h2>Worker Assignment Summary</h2>
-            <div id="summary-output">
-                </div>
+            <div id="summary-output"></div>
         </section>
     </main>
 
-    <script src="script.js"></script>
+    <script>
+        let currentSlots = [];
+
+        function initShift(start, end) {
+            const header = document.getElementById('header-row');
+            const tableWrap = document.getElementById('table-wrap');
+            const configUi = document.getElementById('config-ui');
+            
+            header.innerHTML = '<th>Position</th>';
+            currentSlots = [];
+
+            let curr = new Date(`2026-01-01T${start}:00`);
+            let stop = new Date(`2026-01-01T${end}:00`);
+            if (stop <= curr) stop.setDate(stop.getDate() + 1);
+
+            while (curr < stop) {
+                let timeStr = curr.toTimeString().substring(0, 5);
+                currentSlots.push(timeStr);
+                header.innerHTML += `<th>${timeStr}</th>`;
+                curr.setMinutes(curr.getMinutes() + 15);
+            }
+
+            tableWrap.style.display = 'block';
+            configUi.style.display = 'block';
+            document.getElementById('table-body').innerHTML = ''; // Clear previous rows
+        }
+
+        function addRow() {
+            const posName = document.getElementById('pos-input').value || "New Position";
+            const body = document.getElementById('table-body');
+            let row = `<tr><td>${posName}</td>`;
+            
+            currentSlots.forEach(() => {
+                row += `<td><input type="text" placeholder="UNMANNED" onchange="this.parentElement.className = this.value ? '' : 'unmanned'"></td>`;
+            });
+            
+            row += `</tr>`;
+            body.innerHTML += row;
+            document.getElementById('pos-input').value = '';
+        }
+
+        function generateSummary() {
+            const rows = document.querySelectorAll('#table-body tr');
+            const summaryDiv = document.getElementById('summary-output');
+            const summarySection = document.getElementById('summary-section');
+            let workers = {};
+
+            rows.forEach(row => {
+                const pos = row.cells[0].innerText;
+                const inputs = row.querySelectorAll('input');
+                
+                inputs.forEach((input, index) => {
+                    const name = input.value.trim() || "UNMANNED";
+                    const time = currentSlots[index];
+                    
+                    if (name !== "UNMANNED") {
+                        if (!workers[name]) workers[name] = [];
+                        workers[name].push({ time, pos });
+                    }
+                });
+            });
+
+            summaryDiv.innerHTML = '';
+            for (let name in workers) {
+                let html = `<div class="summary-card"><strong>${name}</strong><br>`;
+                workers[name].forEach(task => {
+                    html += `${task.time}: ${task.pos} | `;
+                });
+                html += `</div>`;
+                summaryDiv.innerHTML += html;
+            }
+            summarySection.style.display = 'block';
+        }
+    </script>
 </body>
 </html>
