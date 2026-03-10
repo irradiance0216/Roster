@@ -3,49 +3,48 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>July's Pro Shift Planner</title>
+    <title>July's Garden: Auto-Scheduler</title>
     <style>
-        :root { --primary: #4a90e2; --bg: #f4f7f6; --text: #333; --unmanned: #eee; --accent: #27ae60; --selected: #ffeb3b; --danger: #e74c3c; }
+        :root { --primary: #4a90e2; --bg: #f4f7f6; --text: #333; --accent: #27ae60; --danger: #e74c3c; --relief: #9b59b6; }
         body { font-family: -apple-system, sans-serif; background: var(--bg); color: var(--text); padding: 15px; margin: 0; }
         .btn-group { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; margin-bottom: 15px; }
         button { padding: 10px 15px; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; }
         .btn-primary { background: var(--primary); color: white; }
-        #worker-palette { background: white; padding: 15px; border-radius: 10px; margin-bottom: 15px; position: sticky; top: 0; z-index: 100; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
-        .worker-chip { display: inline-flex; align-items: center; padding: 8px 15px; margin: 5px; background: #e9ecef; border-radius: 20px; cursor: pointer; border: 2px solid transparent; }
-        .worker-chip.active { border-color: var(--primary); background: var(--selected); }
-        .del-worker { margin-left: 8px; color: var(--danger); font-weight: bold; font-size: 14px; }
+        .btn-auto { background: var(--relief); color: white; width: 100%; margin-top: 10px; font-size: 1.1em; }
+        
+        .card { background: white; padding: 15px; border-radius: 10px; margin-bottom: 15px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        .staff-row { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr 1fr auto; gap: 5px; margin-bottom: 10px; align-items: center; }
+        .staff-row input, .staff-row select { padding: 8px; border: 1px solid #ddd; border-radius: 4px; font-size: 12px; }
+
         .table-scroll-wrapper { width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; background: white; border-radius: 10px; }
         table { border-collapse: collapse; min-width: 1200px; }
-        th, td { border: 1px solid #ddd; padding: 12px; text-align: center; width: 110px; user-select: none; }
+        th, td { border: 1px solid #ddd; padding: 10px; text-align: center; width: 110px; }
         td:first-child, th:first-child { position: sticky; left: 0; background: #f8f9fa; z-index: 5; font-weight: bold; }
-        .cell-assigned { background: #d4edda; font-weight: bold; border: 2px solid var(--accent); }
+        
+        .cell-fixed { background: #d4edda; font-weight: bold; }
+        .cell-relief { background: #e1d5e7; font-style: italic; color: #6a1b9a; }
         .hidden { display: none; }
-        .summary-card { border-left: 5px solid var(--primary); padding: 15px; margin: 10px 0; background: white; }
-        .del-pos { display: block; font-size: 10px; color: var(--danger); cursor: pointer; margin-top: 5px; }
     </style>
 </head>
 <body>
 
 <header style="text-align:center;">
-    <h1>Shift Master 📑</h1>
+    <h1>July's Auto-Scheduler 🌸</h1>
     <div class="btn-group">
-        <button class="btn-primary" onclick="initShift('07:45', '14:45')">Early</button>
-        <button class="btn-primary" onclick="initShift('14:45', '21:45')">Afternoon</button>
-        <button class="btn-primary" onclick="initShift('21:45', '07:45')">Night</button>
+        <button class="btn-primary" onclick="initShift('07:45', '14:45')">Early Shift</button>
+        <button class="btn-primary" onclick="initShift('14:45', '21:45')">Afternoon Shift</button>
+        <button class="btn-primary" onclick="initShift('21:45', '07:45')">Night Shift</button>
     </div>
 </header>
 
 <main>
-    <div id="setup-zone" class="hidden">
-        <div id="worker-palette">
-            <strong>1. Team:</strong> <input type="text" id="worker-input" placeholder="Name">
-            <button onclick="addWorker()">Add</button>
-            <div id="worker-list"></div>
-        </div>
-
-        <div style="margin-bottom: 15px; text-align: center;">
-            <input type="text" id="new-pos" placeholder="Custom Position">
-            <button class="btn-primary" onclick="addPosition()">+ Add Position</button>
+    <section id="config-zone" class="hidden">
+        <div class="card">
+            <h3>1. Staff Registry</h3>
+            <div id="staff-list">
+                </div>
+            <button onclick="addStaffRow()">+ Add Worker</button>
+            <button class="btn-auto" onclick="generateAutoRoster()">🚀 Auto-Assign & Balance Breaks</button>
         </div>
         
         <div class="table-scroll-wrapper">
@@ -54,22 +53,16 @@
                 <tbody id="table-body"></tbody>
             </table>
         </div>
+    </section>
 
-        <button class="btn-primary" style="width:100%; margin-top:20px; background:var(--accent);" onclick="showSummary()">Verify & Generate Summary</button>
-    </div>
-
-    <div id="summary-zone" class="hidden">
+    <section id="summary-zone" class="hidden">
         <div id="summary-content"></div>
-        <div class="btn-group" style="margin-top:20px;">
-            <button class="btn-primary" style="flex:1;" onclick="backToEdit()">Modify Schedule</button>
-            <button class="btn-success" style="flex:1; background:var(--accent);" onclick="downloadCSV()">Download CSV 📥</button>
-        </div>
-    </div>
+        <button class="btn-primary" style="width:100%;" onclick="backToEdit()">Back to Grid</button>
+    </section>
 </main>
 
 <script>
-    let times = [], positions = [], workers = [], activeWorker = null;
-    let finalSummaryData = []; // To store data for CSV
+    let times = [], positions = [], staffData = [];
     const mandatoryPositions = ["EA", "SA", "WA", "TA", "DA", "CFD1", "CFD2", "CFD3", "BA1", "BA2"];
 
     function initShift(start, end) {
@@ -81,126 +74,86 @@
             times.push(curr.toTimeString().substring(0, 5));
             curr.setMinutes(curr.getMinutes() + 15);
         }
-        document.getElementById('setup-zone').classList.remove('hidden');
+        document.getElementById('config-zone').classList.remove('hidden');
         renderTable();
+        if (staffData.length === 0) addStaffRow(); // Start with one row
     }
 
-    function addWorker() {
-        const name = document.getElementById('worker-input').value.trim();
-        if (name && !workers.includes(name)) { workers.push(name); renderWorkerList(); }
-        document.getElementById('worker-input').value = '';
-    }
-
-    function removeWorker(name, event) {
-        event.stopPropagation(); // Prevent selecting worker when clicking delete
-        workers = workers.filter(w => w !== name);
-        if (activeWorker === name) activeWorker = null;
-        renderWorkerList();
-    }
-
-    function renderWorkerList() {
-        document.getElementById('worker-list').innerHTML = workers.map(w => 
-            `<span class="worker-chip ${activeWorker === w ? 'active' : ''}" onclick="selectWorker('${w}')">
-                ${w} <span class="del-worker" onclick="removeWorker('${w}', event)">✖</span>
-            </span>`
-        ).join('') + `<span class="worker-chip" onclick="selectWorker(null)" style="background:#ffcccc">Eraser</span>`;
-    }
-
-    function selectWorker(name) { activeWorker = name; renderWorkerList(); }
-
-    function addPosition() {
-        const val = document.getElementById('new-pos').value.trim();
-        if (val) { positions.push(val); renderTable(); }
-        document.getElementById('new-pos').value = '';
-    }
-
-    function removePosition(index) {
-        if(confirm(`Remove ${positions[index]}?`)) { positions.splice(index, 1); renderTable(); }
+    function addStaffRow() {
+        const container = document.getElementById('staff-list');
+        const row = document.createElement('div');
+        row.className = 'staff-row';
+        row.innerHTML = `
+            <input type="text" placeholder="Name" class="s-name">
+            <select class="s-pos">${positions.map(p => `<option value="${p}">${p}</option>`).join('')}<option value="Relief">Relief</option></select>
+            <input type="time" class="s-start" value="${times[0]}">
+            <input type="time" class="s-end" value="${times[times.length-1]}">
+            <select class="s-role"><option value="Fixed">Fixed</option><option value="Relief">Relief</option></select>
+            <button onclick="this.parentElement.remove()" style="background:none; color:red;">✖</button>
+        `;
+        container.appendChild(row);
     }
 
     function renderTable() {
-        document.getElementById('table-head').innerHTML = `<th>Time</th>` + positions.map((p, i) => 
-            `<th>${p}<span class="del-pos" onclick="removePosition(${i})">✖</span></th>`).join('');
+        document.getElementById('table-head').innerHTML = `<th>Time</th>` + positions.map(p => `<th>${p}</th>`).join('');
         document.getElementById('table-body').innerHTML = times.map(t => `
             <tr>
                 <td>${t}</td>
-                ${positions.map(p => `<td onclick="paintCell(this)" data-time="${t}" data-pos="${p}">UNMANNED</td>`).join('')}
+                ${positions.map(p => `<td data-time="${t}" data-pos="${p}">UNMANNED</td>`).join('')}
             </tr>`).join('');
     }
 
-    function paintCell(cell) {
-        const time = cell.dataset.time;
-        if (!activeWorker) { cell.innerText = "UNMANNED"; cell.classList.remove('cell-assigned'); return; }
-        let conflict = false;
-        document.querySelectorAll(`td[data-time="${time}"]`).forEach(td => { if (td !== cell && td.innerText === activeWorker) conflict = true; });
-        if (conflict) { alert(`${activeWorker} is already assigned at ${time}!`); return; }
-        cell.innerText = activeWorker;
-        cell.classList.add('cell-assigned');
-    }
+    function generateAutoRoster() {
+        renderTable(); // Reset first
+        const rows = document.querySelectorAll('.staff-row');
+        let fixedStaff = [];
+        let reliefStaff = [];
 
-    function showSummary() {
-        let workerLogs = {};
-        finalSummaryData = [];
-        document.querySelectorAll('#table-body td[data-pos]').forEach(cell => {
-            const name = cell.innerText;
-            if (name !== "UNMANNED") {
-                if (!workerLogs[name]) workerLogs[name] = [];
-                workerLogs[name].push({ time: cell.dataset.time, pos: cell.dataset.pos });
+        rows.forEach(row => {
+            let s = {
+                name: row.querySelector('.s-name').value,
+                pos: row.querySelector('.s-pos').value,
+                start: row.querySelector('.s-start').value,
+                end: row.querySelector('.s-end').value,
+                role: row.querySelector('.s-role').value
+            };
+            if (s.name) s.role === 'Fixed' ? fixedStaff.push(s) : reliefStaff.push(s);
+        });
+
+        // 1. Fill Fixed Duties
+        fixedStaff.forEach(s => {
+            let inShift = false;
+            times.forEach(t => {
+                if (t === s.start) inShift = true;
+                if (t === s.end) inShift = false;
+                if (inShift) {
+                    const cell = document.querySelector(`td[data-time="${t}"][data-pos="${s.pos}"]`);
+                    if (cell) { cell.innerText = s.name; cell.className = 'cell-fixed'; }
+                }
+            });
+        });
+
+        // 2. Assign Meals (60 mins) & Simple Relief
+        // This is a simplified version of the logic - it swaps fixed staff out mid-shift
+        fixedStaff.forEach((s, index) => {
+            let relief = reliefStaff[index % reliefStaff.length];
+            if (!relief) return;
+
+            let midPoint = Math.floor(times.length / 2) - 2 + index; // Staggered starts
+            for (let i = 0; i < 4; i++) { // 4 slots = 60 mins
+                let t = times[midPoint + i];
+                const cell = document.querySelector(`td[data-time="${t}"][data-pos="${s.pos}"]`);
+                if (cell) { cell.innerText = relief.name; cell.className = 'cell-relief'; }
             }
         });
 
-        let html = '<h2>Audit Summary</h2>';
-        for (const [name, tasks] of Object.entries(workerLogs)) {
-            let workMinutes = tasks.length * 15;
-            let breakMinutes = (times.length * 15) - workMinutes;
-            let workerTimeMap = {};
-            tasks.forEach(t => workerTimeMap[t.time] = t.pos);
-
-            let scheduleText = "";
-            let currentStart = times[0];
-
-            html += `<div class="summary-card"><strong>${name}</strong> (Work: ${workMinutes}m | Break: ${breakMinutes}m)<hr>`;
-            
-            times.forEach((t, i) => {
-                let currentPos = workerTimeMap[t] || "Break";
-                if (i === times.length - 1 || (workerTimeMap[times[i+1]] || "Break") !== currentPos) {
-                    let log = `${currentStart} - ${getNextTime(t)}: ${currentPos}`;
-                    html += `<span style="color:${currentPos==='Break'?'var(--danger)':'var(--text)'}">${log}</span><br>`;
-                    scheduleText += log + " | ";
-                    if (i < times.length - 1) currentStart = times[i+1];
-                }
-            });
-            html += `</div>`;
-            finalSummaryData.push({ name, workMinutes, breakMinutes, schedule: scheduleText });
-        }
-        document.getElementById('summary-content').innerHTML = html || 'No assignments.';
-        document.getElementById('setup-zone').classList.add('hidden');
-        document.getElementById('summary-zone').classList.remove('hidden');
+        alert("Auto-Roster Generated! Review the grid below.");
     }
 
-    function downloadCSV() {
-        let csv = "Worker,Work Minutes,Break Minutes,Schedule\n";
-        finalSummaryData.forEach(row => {
-            csv += `"${row.name}","${row.workMinutes}","${row.breakMinutes}","${row.schedule}"\n`;
-        });
-        const blob = new Blob([csv], { type: 'text/csv' });
-        const url = window.URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.setAttribute('hidden', '');
-        a.setAttribute('href', url);
-        a.setAttribute('download', 'shift_summary.csv');
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
+    function backToEdit() {
+        document.getElementById('config-zone').classList.remove('hidden');
+        document.getElementById('summary-zone').classList.add('hidden');
     }
-
-    function getNextTime(t) {
-        let d = new Date(`2026-01-01T${t}:00`);
-        d.setMinutes(d.getMinutes() + 15);
-        return d.toTimeString().substring(0, 5);
-    }
-
-    function backToEdit() { document.getElementById('setup-zone').classList.remove('hidden'); document.getElementById('summary-zone').classList.add('hidden'); }
 </script>
 </body>
 </html>
