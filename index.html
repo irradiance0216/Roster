@@ -5,41 +5,28 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>July's Pro Shift Planner</title>
     <style>
-        :root { --primary: #4a90e2; --bg: #f4f7f6; --text: #333; --unmanned: #eee; --accent: #27ae60; --selected: #ffeb3b; }
+        :root { --primary: #4a90e2; --bg: #f4f7f6; --text: #333; --unmanned: #eee; --accent: #27ae60; --selected: #ffeb3b; --danger: #e74c3c; }
         body { font-family: -apple-system, sans-serif; background: var(--bg); color: var(--text); padding: 15px; margin: 0; }
-        
         .btn-group { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; margin-bottom: 15px; }
         button { padding: 10px 15px; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; }
         .btn-primary { background: var(--primary); color: white; }
-        
-        /* Worker Palette */
-        #worker-palette { 
-            background: white; padding: 15px; border-radius: 10px; 
-            margin-bottom: 15px; box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-            position: sticky; top: 0; z-index: 100;
-        }
-        .worker-chip { 
-            display: inline-block; padding: 8px 15px; margin: 5px; 
-            background: #e9ecef; border-radius: 20px; cursor: pointer; border: 2px solid transparent;
-        }
-        .worker-chip.active { border-color: var(--primary); background: var(--selected); box-shadow: 0 0 8px rgba(0,0,0,0.2); }
-
-        /* Table Styling */
+        #worker-palette { background: white; padding: 15px; border-radius: 10px; margin-bottom: 15px; position: sticky; top: 0; z-index: 100; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        .worker-chip { display: inline-block; padding: 8px 15px; margin: 5px; background: #e9ecef; border-radius: 20px; cursor: pointer; border: 2px solid transparent; }
+        .worker-chip.active { border-color: var(--primary); background: var(--selected); }
         .table-scroll-wrapper { width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; background: white; border-radius: 10px; }
-        table { border-collapse: collapse; min-width: 1000px; cursor: cell; }
+        table { border-collapse: collapse; min-width: 1000px; }
         th, td { border: 1px solid #ddd; padding: 12px; text-align: center; width: 100px; user-select: none; }
-        
         td:first-child, th:first-child { position: sticky; left: 0; background: #f8f9fa; z-index: 5; font-weight: bold; }
-        
-        .cell-assigned { background: #d4edda; font-weight: bold; color: #155724; }
+        .cell-assigned { background: #d4edda; font-weight: bold; }
         .hidden { display: none; }
         .summary-card { border-left: 5px solid var(--primary); padding: 15px; margin: 10px 0; background: white; }
+        .stats-box { display: flex; gap: 15px; margin-top: 5px; font-size: 0.9em; font-weight: bold; color: #555; }
     </style>
 </head>
 <body>
 
 <header style="text-align:center;">
-    <h1>Shift Painter 🎨</h1>
+    <h1>Shift Planner & Auditor 📑</h1>
     <div class="btn-group">
         <button class="btn-primary" onclick="initShift('07:45', '14:45')">Early</button>
         <button class="btn-primary" onclick="initShift('14:45', '21:45')">Afternoon</button>
@@ -50,15 +37,13 @@
 <main>
     <div id="setup-zone" class="hidden">
         <div id="worker-palette">
-            <strong>1. Add Workers:</strong>
-            <input type="text" id="worker-input" placeholder="Name">
-            <button onclick="addWorker()">Add</button> | 
-            <strong>2. Select a Worker to "Paint":</strong>
+            <strong>1. Team:</strong> <input type="text" id="worker-input" placeholder="Name">
+            <button onclick="addWorker()">Add</button>
             <div id="worker-list"></div>
         </div>
 
-        <div style="margin-bottom: 15px;">
-            <input type="text" id="new-pos" placeholder="New Position">
+        <div style="margin-bottom: 15px; text-align: center;">
+            <input type="text" id="new-pos" placeholder="Position Name">
             <button class="btn-primary" onclick="addPosition()">+ Add Position</button>
         </div>
         
@@ -69,12 +54,12 @@
             </table>
         </div>
 
-        <button class="btn-primary" style="width:100%; margin-top:20px; background:#27ae60;" onclick="showSummary()">Generate Final Summary</button>
+        <button class="btn-primary" style="width:100%; margin-top:20px; background:var(--accent);" onclick="showSummary()">Verify & Generate Summary</button>
     </div>
 
     <div id="summary-zone" class="hidden">
         <div id="summary-content"></div>
-        <button class="btn-primary" style="width:100%;" onclick="backToEdit()">Back to Painting</button>
+        <button class="btn-primary" style="width:100%;" onclick="backToEdit()">Modify Schedule</button>
     </div>
 </main>
 
@@ -95,10 +80,7 @@
 
     function addWorker() {
         const name = document.getElementById('worker-input').value.trim();
-        if (name && !workers.includes(name)) {
-            workers.push(name);
-            renderWorkerList();
-        }
+        if (name && !workers.includes(name)) { workers.push(name); renderWorkerList(); }
         document.getElementById('worker-input').value = '';
     }
 
@@ -108,10 +90,7 @@
         ).join('') + `<span class="worker-chip" onclick="selectWorker(null)" style="background:#ffcccc">Eraser</span>`;
     }
 
-    function selectWorker(name) {
-        activeWorker = name;
-        renderWorkerList();
-    }
+    function selectWorker(name) { activeWorker = name; renderWorkerList(); }
 
     function addPosition() {
         const val = document.getElementById('new-pos').value;
@@ -129,13 +108,26 @@
     }
 
     function paintCell(cell) {
+        const time = cell.dataset.time;
         if (!activeWorker) {
             cell.innerText = "UNMANNED";
             cell.classList.remove('cell-assigned');
-        } else {
-            cell.innerText = activeWorker;
-            cell.classList.add('cell-assigned');
+            return;
         }
+
+        // VALIDATION RULE: Check if worker is already in another position at this time
+        let conflict = false;
+        document.querySelectorAll(`td[data-time="${time}"]`).forEach(td => {
+            if (td !== cell && td.innerText === activeWorker) conflict = true;
+        });
+
+        if (conflict) {
+            alert(`${activeWorker} is already assigned to a position at ${time}!`);
+            return;
+        }
+
+        cell.innerText = activeWorker;
+        cell.classList.add('cell-assigned');
     }
 
     function showSummary() {
@@ -148,18 +140,26 @@
             }
         });
 
-        let html = '<h2>Shift Summary</h2>';
+        let html = '<h2>Audit Summary</h2>';
         for (const [name, tasks] of Object.entries(workerLogs)) {
-            html += `<div class="summary-card"><strong>${name}</strong><br>`;
+            let workMinutes = tasks.length * 15;
+            let breakMinutes = (times.length * 15) - workMinutes;
+            
+            html += `<div class="summary-card">
+                <strong>${name}</strong>
+                <div class="stats-box">
+                    <span>Work: ${workMinutes}m</span> | <span>Break: ${breakMinutes}m</span>
+                </div><hr>`;
+            
             let workerTimeMap = {};
             tasks.forEach(t => workerTimeMap[t.time] = t.pos);
-            
             let currentStart = times[0];
+
             times.forEach((t, i) => {
                 let currentPos = workerTimeMap[t] || "Break";
                 if (i === times.length - 1 || (workerTimeMap[times[i+1]] || "Break") !== currentPos) {
-                    let nextTime = getNextTime(t);
-                    html += `<span style="color:${currentPos==='Break'?'#f39c12':'#333'}">${currentStart} - ${nextTime}: ${currentPos}</span><br>`;
+                    let style = currentPos === 'Break' ? 'style="color:var(--danger)"' : '';
+                    html += `<span ${style}>${currentStart} - ${getNextTime(t)}: ${currentPos}</span><br>`;
                     if (i < times.length - 1) currentStart = times[i+1];
                 }
             });
