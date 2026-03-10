@@ -3,48 +3,52 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>July's Garden: Auto-Scheduler</title>
+    <title>July's Garden: Dynamic Scheduler</title>
     <style>
-        :root { --primary: #4a90e2; --bg: #f4f7f6; --text: #333; --accent: #27ae60; --danger: #e74c3c; --relief: #9b59b6; }
+        :root { --primary: #4a90e2; --bg: #f4f7f6; --text: #333; --accent: #27ae60; --danger: #e74c3c; --relief: #9b59b6; --break: #f39c12; --closed: #95a5a6; }
         body { font-family: -apple-system, sans-serif; background: var(--bg); color: var(--text); padding: 15px; margin: 0; }
         .btn-group { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; margin-bottom: 15px; }
         button { padding: 10px 15px; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; }
         .btn-primary { background: var(--primary); color: white; }
-        .btn-auto { background: var(--relief); color: white; width: 100%; margin-top: 10px; font-size: 1.1em; }
+        .btn-auto { background: var(--relief); color: white; width: 100%; margin: 10px 0; }
         
         .card { background: white; padding: 15px; border-radius: 10px; margin-bottom: 15px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
-        .staff-row { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr 1fr auto; gap: 5px; margin-bottom: 10px; align-items: center; }
-        .staff-row input, .staff-row select { padding: 8px; border: 1px solid #ddd; border-radius: 4px; font-size: 12px; }
+        .staff-row { display: grid; grid-template-columns: 1.5fr 1fr 1fr 1fr 1.2fr auto; gap: 5px; margin-bottom: 10px; align-items: center; }
+        .staff-row input, .staff-row select { padding: 8px; border: 1px solid #ddd; border-radius: 4px; font-size: 12px; width: 100%; box-sizing: border-box;}
 
         .table-scroll-wrapper { width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; background: white; border-radius: 10px; }
         table { border-collapse: collapse; min-width: 1200px; }
-        th, td { border: 1px solid #ddd; padding: 10px; text-align: center; width: 110px; }
+        th, td { border: 1px solid #ddd; padding: 10px; text-align: center; width: 110px; cursor: pointer; }
         td:first-child, th:first-child { position: sticky; left: 0; background: #f8f9fa; z-index: 5; font-weight: bold; }
         
         .cell-fixed { background: #d4edda; font-weight: bold; }
         .cell-relief { background: #e1d5e7; font-style: italic; color: #6a1b9a; }
+        .cell-closed { background: var(--closed); color: white; font-weight: bold; }
         .hidden { display: none; }
+        
+        .summary-card { border-left: 5px solid var(--primary); padding: 15px; margin: 10px 0; background: white; border-radius: 5px; }
+        .adjust-btn { padding: 2px 8px; font-size: 14px; background: #eee; border: 1px solid #ccc; border-radius: 4px; cursor: pointer; }
     </style>
 </head>
 <body>
 
 <header style="text-align:center;">
-    <h1>July's Auto-Scheduler 🌸</h1>
+    <h1>July's Dynamic Master 🌸</h1>
     <div class="btn-group">
-        <button class="btn-primary" onclick="initShift('07:45', '14:45')">Early Shift</button>
-        <button class="btn-primary" onclick="initShift('14:45', '21:45')">Afternoon Shift</button>
-        <button class="btn-primary" onclick="initShift('21:45', '07:45')">Night Shift</button>
+        <button class="btn-primary" onclick="initShift('07:45', '14:45')">Early</button>
+        <button class="btn-primary" onclick="initShift('14:45', '21:45')">Afternoon</button>
+        <button class="btn-primary" onclick="initShift('21:45', '07:45')">Night</button>
     </div>
 </header>
 
 <main>
     <section id="config-zone" class="hidden">
         <div class="card">
+            <p><small>Tip: Tap any cell in the grid to toggle <strong>CLOSED</strong> status before auto-assigning.</small></p>
             <h3>1. Staff Registry</h3>
-            <div id="staff-list">
-                </div>
+            <div id="staff-list"></div>
             <button onclick="addStaffRow()">+ Add Worker</button>
-            <button class="btn-auto" onclick="generateAutoRoster()">🚀 Auto-Assign & Balance Breaks</button>
+            <button class="btn-auto" onclick="generateAutoRoster()">🚀 Auto-Assign & Balance</button>
         </div>
         
         <div class="table-scroll-wrapper">
@@ -53,11 +57,13 @@
                 <tbody id="table-body"></tbody>
             </table>
         </div>
+        
+        <button class="btn-primary" style="width:100%; margin-top:20px; background:var(--accent);" onclick="generateSummary()">Review Fairness & Breaks</button>
     </section>
 
     <section id="summary-zone" class="hidden">
         <div id="summary-content"></div>
-        <button class="btn-primary" style="width:100%;" onclick="backToEdit()">Back to Grid</button>
+        <button class="btn-primary" style="width:100%; margin-top:10px;" onclick="backToEdit()">Modify Grid</button>
     </section>
 </main>
 
@@ -76,78 +82,149 @@
         }
         document.getElementById('config-zone').classList.remove('hidden');
         renderTable();
-        if (staffData.length === 0) addStaffRow(); // Start with one row
-    }
-
-    function addStaffRow() {
-        const container = document.getElementById('staff-list');
-        const row = document.createElement('div');
-        row.className = 'staff-row';
-        row.innerHTML = `
-            <input type="text" placeholder="Name" class="s-name">
-            <select class="s-pos">${positions.map(p => `<option value="${p}">${p}</option>`).join('')}<option value="Relief">Relief</option></select>
-            <input type="time" class="s-start" value="${times[0]}">
-            <input type="time" class="s-end" value="${times[times.length-1]}">
-            <select class="s-role"><option value="Fixed">Fixed</option><option value="Relief">Relief</option></select>
-            <button onclick="this.parentElement.remove()" style="background:none; color:red;">✖</button>
-        `;
-        container.appendChild(row);
+        loadSavedStaff();
     }
 
     function renderTable() {
-        document.getElementById('table-head').innerHTML = `<th>Time</th>` + positions.map(p => `<th>${p}</th>`).join('');
+        document.getElementById('table-head').innerHTML = `<th>Time</th>` + positions.map((p, i) => `<th>${p}</th>`).join('');
         document.getElementById('table-body').innerHTML = times.map(t => `
-            <tr>
-                <td>${t}</td>
-                ${positions.map(p => `<td data-time="${t}" data-pos="${p}">UNMANNED</td>`).join('')}
-            </tr>`).join('');
+            <tr><td>${t}</td>${positions.map(p => `<td data-time="${t}" data-pos="${p}" onclick="toggleClosed(this)">UNMANNED</td>`).join('')}</tr>`).join('');
     }
 
-    function generateAutoRoster() {
-        renderTable(); // Reset first
-        const rows = document.querySelectorAll('.staff-row');
-        let fixedStaff = [];
-        let reliefStaff = [];
+    function toggleClosed(cell) {
+        if (cell.innerText === "CLOSED") {
+            cell.innerText = "UNMANNED";
+            cell.className = "";
+        } else {
+            cell.innerText = "CLOSED";
+            cell.className = "cell-closed";
+        }
+    }
 
-        rows.forEach(row => {
-            let s = {
-                name: row.querySelector('.s-name').value,
-                pos: row.querySelector('.s-pos').value,
-                start: row.querySelector('.s-start').value,
-                end: row.querySelector('.s-end').value,
-                role: row.querySelector('.s-role').value
-            };
-            if (s.name) s.role === 'Fixed' ? fixedStaff.push(s) : reliefStaff.push(s);
+    function addStaffRow(saved = null) {
+        const row = document.createElement('div');
+        row.className = 'staff-row';
+        row.innerHTML = `
+            <input type="text" placeholder="Name" class="s-name" value="${saved?.name || ''}">
+            <select class="s-pos">${positions.map(p => `<option value="${p}" ${saved?.pos === p ? 'selected' : ''}>${p}</option>`).join('')}<option value="Relief" ${saved?.pos === 'Relief' ? 'selected' : ''}>Relief</option></select>
+            <input type="time" class="s-start" value="${saved?.start || times[0]}">
+            <input type="time" class="s-end" value="${saved?.end || times[times.length-1]}">
+            <select class="s-role"><option value="Fixed" ${saved?.role === 'Fixed' ? 'selected' : ''}>Fixed</option><option value="Relief" ${saved?.role === 'Relief' ? 'selected' : ''}>Relief</option></select>
+            <button onclick="removeStaff(this)" style="background:none; color:red;">✖</button>
+        `;
+        document.getElementById('staff-list').appendChild(row);
+        saveStaff();
+    }
+
+    function saveStaff() {
+        const data = Array.from(document.querySelectorAll('.staff-row')).map(row => ({
+            name: row.querySelector('.s-name').value,
+            pos: row.querySelector('.s-pos').value,
+            start: row.querySelector('.s-start').value,
+            end: row.querySelector('.s-end').value,
+            role: row.querySelector('.s-role').value
+        }));
+        localStorage.setItem('staffData', JSON.stringify(data));
+    }
+
+    function loadSavedStaff() {
+        const saved = JSON.parse(localStorage.getItem('staffData'));
+        document.getElementById('staff-list').innerHTML = "";
+        if (saved && saved.length > 0) saved.forEach(s => addStaffRow(s));
+        else addStaffRow();
+    }
+
+    function removeStaff(btn) { btn.parentElement.remove(); saveStaff(); }
+
+    function generateAutoRoster() {
+        saveStaff();
+        const data = JSON.parse(localStorage.getItem('staffData'));
+        let fixed = data.filter(s => s.role === 'Fixed' && s.name);
+        let relief = data.filter(s => s.role === 'Relief' && s.name);
+
+        // 1. Clear assigned but keep CLOSED
+        document.querySelectorAll('td[data-pos]').forEach(td => {
+            if (td.innerText !== "CLOSED") { td.innerText = "UNMANNED"; td.className = ""; }
         });
 
-        // 1. Fill Fixed Duties
-        fixedStaff.forEach(s => {
-            let inShift = false;
+        // 2. Assign Fixed (Respect CLOSED)
+        fixed.forEach(s => {
+            let active = false;
             times.forEach(t => {
-                if (t === s.start) inShift = true;
-                if (t === s.end) inShift = false;
-                if (inShift) {
+                if (t === s.start) active = true;
+                if (t === s.end) active = false;
+                if (active) {
                     const cell = document.querySelector(`td[data-time="${t}"][data-pos="${s.pos}"]`);
-                    if (cell) { cell.innerText = s.name; cell.className = 'cell-fixed'; }
+                    if (cell && cell.innerText !== "CLOSED") { cell.innerText = s.name; cell.className = 'cell-fixed'; }
                 }
             });
         });
 
-        // 2. Assign Meals (60 mins) & Simple Relief
-        // This is a simplified version of the logic - it swaps fixed staff out mid-shift
-        fixedStaff.forEach((s, index) => {
-            let relief = reliefStaff[index % reliefStaff.length];
-            if (!relief) return;
-
-            let midPoint = Math.floor(times.length / 2) - 2 + index; // Staggered starts
-            for (let i = 0; i < 4; i++) { // 4 slots = 60 mins
-                let t = times[midPoint + i];
+        // 3. Simple 60m Meal Relief
+        fixed.forEach((s, idx) => {
+            let r = relief[idx % relief.length];
+            if (!r) return;
+            let mid = Math.floor(times.length / 2) - 2 + (idx * 2);
+            for (let i = 0; i < 4; i++) {
+                let t = times[mid + i];
                 const cell = document.querySelector(`td[data-time="${t}"][data-pos="${s.pos}"]`);
-                if (cell) { cell.innerText = relief.name; cell.className = 'cell-relief'; }
+                if (cell && cell.innerText !== "CLOSED") { cell.innerText = r.name; cell.className = 'cell-relief'; }
+            }
+        });
+    }
+
+    function generateSummary() {
+        let logs = {};
+        document.querySelectorAll('td[data-pos]').forEach(td => {
+            const name = td.innerText;
+            if (name !== "UNMANNED" && name !== "CLOSED") {
+                if (!logs[name]) logs[name] = [];
+                logs[name].push({ time: td.dataset.time, pos: td.dataset.pos });
             }
         });
 
-        alert("Auto-Roster Generated! Review the grid below.");
+        let html = '<h2>Fairness Dashboard</h2>';
+        for (const name in logs) {
+            let workMin = logs[name].length * 15;
+            html += `<div class="summary-card">
+                <strong>${name}</strong> | Work: <span id="work-${name}">${workMin}</span>m
+                <button class="adjust-btn" onclick="adjustTime('${name}', -15)">- Work</button>
+                <button class="adjust-btn" onclick="adjustTime('${name}', 15)">+ Work</button>
+                <hr>`;
+            
+            let timeMap = {};
+            logs[name].forEach(l => timeMap[l.time] = l.pos);
+            let start = times[0];
+            times.forEach((t, i) => {
+                let cur = timeMap[t] || "Break";
+                if (i === times.length - 1 || (timeMap[times[i+1]] || "Break") !== cur) {
+                    html += `<span style="${cur === "Break" ? 'color:var(--break);' : ''}">${start} - ${getNextTime(t)}: ${cur}</span><br>`;
+                    if (i < times.length - 1) start = times[i+1];
+                }
+            });
+            html += `</div>`;
+        }
+        document.getElementById('summary-content').innerHTML = html;
+        document.getElementById('config-zone').classList.add('hidden');
+        document.getElementById('summary-zone').classList.remove('hidden');
+    }
+
+    function adjustTime(name, delta) {
+        // Logic: Find the first available break or work slot to flip
+        const cells = Array.from(document.querySelectorAll('td[data-pos]'));
+        if (delta > 0) { // Add work
+            const breakCell = cells.find(c => c.innerText === "UNMANNED");
+            if (breakCell) { breakCell.innerText = name; breakCell.className = "cell-fixed"; }
+        } else { // Reduce work
+            const workCell = cells.find(c => c.innerText === name);
+            if (workCell) { workCell.innerText = "UNMANNED"; workCell.className = ""; }
+        }
+        generateSummary(); // Refresh UI
+    }
+
+    function getNextTime(t) {
+        let d = new Date(`2026-01-01T${t}:00`); d.setMinutes(d.getMinutes() + 15);
+        return d.toTimeString().substring(0, 5);
     }
 
     function backToEdit() {
