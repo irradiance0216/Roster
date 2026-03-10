@@ -3,184 +3,171 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Shift Scheduler</title>
+    <title>Shift Vertical Scheduler</title>
     <style>
-        :root {
-            --primary: #4a90e2;
-            --bg: #f4f7f6;
-            --text: #333;
-            --unmanned: #e0e0e0;
-        }
-
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-            background-color: var(--bg);
-            color: var(--text);
-            margin: 0;
-            padding: 20px;
-        }
-
-        header { text-align: center; margin-bottom: 30px; }
-
-        #proforma-selection {
-            display: flex;
-            gap: 10px;
-            justify-content: center;
-            flex-wrap: wrap;
-            margin-bottom: 20px;
-        }
-
-        button {
-            padding: 12px 20px;
-            border: none;
-            border-radius: 8px;
-            background: var(--primary);
-            color: white;
-            font-weight: bold;
-            cursor: pointer;
-        }
-
-        .table-container {
-            overflow-x: auto;
-            background: white;
-            border-radius: 12px;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-            margin-top: 20px;
-            display: none; /* Hidden until shift is selected */
-        }
-
-        table { border-collapse: collapse; width: 100%; min-width: 1200px; }
-
-        th, td {
-            border: 1px solid #ddd;
-            padding: 10px;
-            text-align: center;
-            min-width: 100px;
-        }
-
-        /* Sticky Position Column */
-        th:first-child, td:first-child {
-            position: sticky;
-            left: 0;
-            background: #eee;
-            z-index: 2;
-        }
-
-        .unmanned { background-color: var(--unmanned); color: #777; }
+        :root { --primary: #4a90e2; --bg: #f4f7f6; --text: #333; --unmanned: #f0f0f0; --accent: #27ae60; }
+        body { font-family: sans-serif; background: var(--bg); color: var(--text); padding: 15px; margin: 0; }
+        header { text-align: center; margin-bottom: 20px; }
         
-        .summary-card {
-            background: white;
-            padding: 15px;
-            margin-top: 10px;
-            border-radius: 8px;
-            border-left: 5px solid var(--primary);
-        }
+        .btn-group { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; margin-bottom: 15px; }
+        button { padding: 10px 16px; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; }
+        .btn-primary { background: var(--primary); color: white; }
+        .btn-success { background: var(--accent); color: white; }
+        .btn-modify { background: #f39c12; color: white; }
+
+        .container { background: white; border-radius: 10px; padding: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+        th, td { border: 1px solid #ddd; padding: 12px 8px; text-align: center; }
+        
+        /* Sticky Header for Times */
+        thead th { position: sticky; top: 0; background: #eee; z-index: 10; }
+        
+        input { width: 90%; border: 1px solid #ccc; padding: 5px; border-radius: 4px; }
+        .pos-header { font-weight: bold; background: #fafafa; }
+        
+        .hidden { display: none; }
+        .summary-card { border-left: 5px solid var(--primary); padding: 10px; margin: 10px 0; background: #f9f9f9; }
     </style>
 </head>
 <body>
 
-    <header>
-        <h1>Shift Scheduler ⏳</h1>
-        <div id="proforma-selection">
-            <button onclick="initShift('07:45', '14:45')">Early (07:45-14:45)</button>
-            <button onclick="initShift('14:45', '21:45')">Afternoon (14:45-21:45)</button>
-            <button onclick="initShift('21:45', '07:45')">Night (21:45-07:45)</button>
+<header>
+    <h1>Shift Planner ⏳</h1>
+    <div class="btn-group" id="proforma-btns">
+        <button class="btn-primary" onclick="initShift('07:45', '14:45')">Early</button>
+        <button class="btn-primary" onclick="initShift('14:45', '21:45')">Afternoon</button>
+        <button class="btn-primary" onclick="initShift('21:45', '07:45')">Night</button>
+    </div>
+</header>
+
+<main class="container">
+    <div id="setup-zone" class="hidden">
+        <div style="margin-bottom: 15px;">
+            <input type="text" id="new-pos" placeholder="Position Name">
+            <button class="btn-success" onclick="addPosition()">+ Add Position</button>
         </div>
-    </header>
+        
+        <table id="planner-table">
+            <thead><tr id="table-head"></tr></thead>
+            <tbody id="table-body"></tbody>
+        </table>
 
-    <main>
-        <div id="config-ui" style="display:none; text-align: center;">
-            <input type="text" id="pos-input" placeholder="Position Name (e.g. Desk)">
-            <button onclick="addRow()">+ Add Position</button>
-            <button onclick="generateSummary()" style="background: #27ae60;">Generate Summary</button>
+        <div class="btn-group" style="margin-top:20px;">
+            <button class="btn-success" onclick="showSummary()">View Summary</button>
         </div>
+    </div>
 
-        <div class="table-container" id="table-wrap">
-            <table id="main-table">
-                <thead><tr id="header-row"></tr></thead>
-                <tbody id="table-body"></tbody>
-            </table>
-        </div>
+    <div id="summary-zone" class="hidden">
+        <h2>Shift Summary</h2>
+        <div id="summary-content"></div>
+        <button class="btn-modify" onclick="backToEdit()">Modify Schedule</button>
+    </div>
+</main>
 
-        <section id="summary-section" style="display:none; margin-top: 30px;">
-            <h2>Worker Assignment Summary</h2>
-            <div id="summary-output"></div>
-        </section>
-    </main>
+<script>
+    let times = [];
+    let positions = [];
 
-    <script>
-        let currentSlots = [];
+    function initShift(start, end) {
+        times = [];
+        let curr = new Date(`2026-01-01T${start}:00`);
+        let stop = new Date(`2026-01-01T${end}:00`);
+        if (stop <= curr) stop.setDate(stop.getDate() + 1);
 
-        function initShift(start, end) {
-            const header = document.getElementById('header-row');
-            const tableWrap = document.getElementById('table-wrap');
-            const configUi = document.getElementById('config-ui');
-            
-            header.innerHTML = '<th>Position</th>';
-            currentSlots = [];
+        while (curr < stop) {
+            times.push(curr.toTimeString().substring(0, 5));
+            curr.setMinutes(curr.getMinutes() + 15);
+        }
 
-            let curr = new Date(`2026-01-01T${start}:00`);
-            let stop = new Date(`2026-01-01T${end}:00`);
-            if (stop <= curr) stop.setDate(stop.getDate() + 1);
+        document.getElementById('setup-zone').classList.remove('hidden');
+        document.getElementById('summary-zone').classList.add('hidden');
+        renderTable();
+    }
 
-            while (curr < stop) {
-                let timeStr = curr.toTimeString().substring(0, 5);
-                currentSlots.push(timeStr);
-                header.innerHTML += `<th>${timeStr}</th>`;
-                curr.setMinutes(curr.getMinutes() + 15);
+    function addPosition() {
+        const val = document.getElementById('new-pos').value;
+        if (!val) return;
+        positions.push(val);
+        document.getElementById('new-pos').value = '';
+        renderTable();
+    }
+
+    function renderTable() {
+        const head = document.getElementById('table-head');
+        const body = document.getElementById('table-body');
+        
+        // Headers: Time | Position 1 | Position 2...
+        head.innerHTML = `<th>Time</th>` + positions.map(p => `<th>${p}</th>`).join('');
+        
+        body.innerHTML = times.map((t, tIdx) => `
+            <tr>
+                <td class="pos-header">${t}</td>
+                ${positions.map((p, pIdx) => `
+                    <td><input type="text" data-time="${t}" data-pos="${p}" placeholder="UNMANNED"></td>
+                `).join('')}
+            </tr>
+        `).join('');
+    }
+
+    function showSummary() {
+        const summaryContent = document.getElementById('summary-content');
+        const inputs = document.querySelectorAll('#table-body input');
+        let workerLogs = {};
+
+        // Collect data
+        inputs.forEach(input => {
+            const worker = input.value.trim();
+            if (worker && worker.toUpperCase() !== 'UNMANNED') {
+                if (!workerLogs[worker]) workerLogs[worker] = [];
+                workerLogs[worker].push({ time: input.dataset.time, pos: input.dataset.pos });
             }
+        });
 
-            tableWrap.style.display = 'block';
-            configUi.style.display = 'block';
-            document.getElementById('table-body').innerHTML = ''; // Clear previous rows
-        }
-
-        function addRow() {
-            const posName = document.getElementById('pos-input').value || "New Position";
-            const body = document.getElementById('table-body');
-            let row = `<tr><td>${posName}</td>`;
+        // Merge logic
+        let html = '';
+        for (const [name, tasks] of Object.entries(workerLogs)) {
+            html += `<div class="summary-card"><strong>${name}</strong><br>`;
             
-            currentSlots.forEach(() => {
-                row += `<td><input type="text" placeholder="UNMANNED" onchange="this.parentElement.className = this.value ? '' : 'unmanned'"></td>`;
-            });
-            
-            row += `</tr>`;
-            body.innerHTML += row;
-            document.getElementById('pos-input').value = '';
-        }
-
-        function generateSummary() {
-            const rows = document.querySelectorAll('#table-body tr');
-            const summaryDiv = document.getElementById('summary-output');
-            const summarySection = document.getElementById('summary-section');
-            let workers = {};
-
-            rows.forEach(row => {
-                const pos = row.cells[0].innerText;
-                const inputs = row.querySelectorAll('input');
+            let merged = [];
+            if (tasks.length > 0) {
+                let currentGroup = { pos: tasks[0].pos, start: tasks[0].time, end: tasks[0].time };
                 
-                inputs.forEach((input, index) => {
-                    const name = input.value.trim() || "UNMANNED";
-                    const time = currentSlots[index];
+                for (let i = 1; i < tasks.length; i++) {
+                    const lastTimeIndex = times.indexOf(tasks[i-1].time);
+                    const currentTimeIndex = times.indexOf(tasks[i].time);
                     
-                    if (name !== "UNMANNED") {
-                        if (!workers[name]) workers[name] = [];
-                        workers[name].push({ time, pos });
+                    // If same position AND consecutive time slot
+                    if (tasks[i].pos === currentGroup.pos && currentTimeIndex === lastTimeIndex + 1) {
+                        currentGroup.end = tasks[i].time;
+                    } else {
+                        merged.push({...currentGroup});
+                        currentGroup = { pos: tasks[i].pos, start: tasks[i].time, end: tasks[i].time };
                     }
-                });
-            });
-
-            summaryDiv.innerHTML = '';
-            for (let name in workers) {
-                let html = `<div class="summary-card"><strong>${name}</strong><br>`;
-                workers[name].forEach(task => {
-                    html += `${task.time}: ${task.pos} | `;
-                });
-                html += `</div>`;
-                summaryDiv.innerHTML += html;
+                }
+                merged.push(currentGroup);
             }
-            summarySection.style.display = 'block';
+
+            merged.forEach(m => {
+                // Calculate end time (start of next 15m block)
+                let endTimeObj = new Date(`2026-01-01T${m.end}:00`);
+                endTimeObj.setMinutes(endTimeObj.getMinutes() + 15);
+                let endStr = endTimeObj.toTimeString().substring(0, 5);
+                
+                html += `• ${m.start} - ${endStr}: ${m.pos}<br>`;
+            });
+            html += `</div>`;
         }
-    </script>
+
+        summaryContent.innerHTML = html || '<p>No assignments made.</p>';
+        document.getElementById('setup-zone').classList.add('hidden');
+        document.getElementById('summary-zone').classList.remove('hidden');
+    }
+
+    function backToEdit() {
+        document.getElementById('setup-zone').classList.remove('hidden');
+        document.getElementById('summary-zone').classList.add('hidden');
+    }
+</script>
 </body>
 </html>
