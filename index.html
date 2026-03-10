@@ -11,16 +11,16 @@
         button { padding: 10px 15px; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; }
         .btn-primary { background: var(--primary); color: white; }
         #worker-palette { background: white; padding: 15px; border-radius: 10px; margin-bottom: 15px; position: sticky; top: 0; z-index: 100; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
-        .worker-chip { display: inline-block; padding: 8px 15px; margin: 5px; background: #e9ecef; border-radius: 20px; cursor: pointer; border: 2px solid transparent; }
+        .worker-chip { display: inline-flex; align-items: center; padding: 8px 15px; margin: 5px; background: #e9ecef; border-radius: 20px; cursor: pointer; border: 2px solid transparent; }
         .worker-chip.active { border-color: var(--primary); background: var(--selected); }
+        .del-worker { margin-left: 8px; color: var(--danger); font-weight: bold; font-size: 14px; }
         .table-scroll-wrapper { width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; background: white; border-radius: 10px; }
         table { border-collapse: collapse; min-width: 1200px; }
         th, td { border: 1px solid #ddd; padding: 12px; text-align: center; width: 110px; user-select: none; }
         td:first-child, th:first-child { position: sticky; left: 0; background: #f8f9fa; z-index: 5; font-weight: bold; }
         .cell-assigned { background: #d4edda; font-weight: bold; border: 2px solid var(--accent); }
         .hidden { display: none; }
-        .summary-card { border-left: 5px solid var(--primary); padding: 15px; margin: 10px 0; background: white; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
-        .stats-box { display: flex; gap: 15px; margin-top: 5px; font-size: 0.9em; font-weight: bold; color: #555; }
+        .summary-card { border-left: 5px solid var(--primary); padding: 15px; margin: 10px 0; background: white; }
         .del-pos { display: block; font-size: 10px; color: var(--danger); cursor: pointer; margin-top: 5px; }
     </style>
 </head>
@@ -60,18 +60,21 @@
 
     <div id="summary-zone" class="hidden">
         <div id="summary-content"></div>
-        <button class="btn-primary" style="width:100%;" onclick="backToEdit()">Modify Schedule</button>
+        <div class="btn-group" style="margin-top:20px;">
+            <button class="btn-primary" style="flex:1;" onclick="backToEdit()">Modify Schedule</button>
+            <button class="btn-success" style="flex:1; background:var(--accent);" onclick="downloadCSV()">Download CSV 📥</button>
+        </div>
     </div>
 </main>
 
 <script>
     let times = [], positions = [], workers = [], activeWorker = null;
+    let finalSummaryData = []; // To store data for CSV
     const mandatoryPositions = ["EA", "SA", "WA", "TA", "DA", "CFD1", "CFD2", "CFD3", "BA1", "BA2"];
 
     function initShift(start, end) {
         times = [];
-        positions = [...mandatoryPositions]; // Pre-load mandatory list
-        
+        positions = [...mandatoryPositions];
         let curr = new Date(`2026-01-01T${start}:00`), stop = new Date(`2026-01-01T${end}:00`);
         if (stop <= curr) stop.setDate(stop.getDate() + 1);
         while (curr < stop) {
@@ -88,9 +91,18 @@
         document.getElementById('worker-input').value = '';
     }
 
+    function removeWorker(name, event) {
+        event.stopPropagation(); // Prevent selecting worker when clicking delete
+        workers = workers.filter(w => w !== name);
+        if (activeWorker === name) activeWorker = null;
+        renderWorkerList();
+    }
+
     function renderWorkerList() {
         document.getElementById('worker-list').innerHTML = workers.map(w => 
-            `<span class="worker-chip ${activeWorker === w ? 'active' : ''}" onclick="selectWorker('${w}')">${w}</span>`
+            `<span class="worker-chip ${activeWorker === w ? 'active' : ''}" onclick="selectWorker('${w}')">
+                ${w} <span class="del-worker" onclick="removeWorker('${w}', event)">✖</span>
+            </span>`
         ).join('') + `<span class="worker-chip" onclick="selectWorker(null)" style="background:#ffcccc">Eraser</span>`;
     }
 
@@ -103,17 +115,12 @@
     }
 
     function removePosition(index) {
-        if(confirm(`Remove ${positions[index]}?`)) {
-            positions.splice(index, 1);
-            renderTable();
-        }
+        if(confirm(`Remove ${positions[index]}?`)) { positions.splice(index, 1); renderTable(); }
     }
 
     function renderTable() {
-        const head = document.getElementById('table-head');
-        head.innerHTML = `<th>Time</th>` + positions.map((p, i) => 
-            `<th>${p}<span class="del-pos" onclick="removePosition(${i})">✖ Remove</span></th>`).join('');
-        
+        document.getElementById('table-head').innerHTML = `<th>Time</th>` + positions.map((p, i) => 
+            `<th>${p}<span class="del-pos" onclick="removePosition(${i})">✖</span></th>`).join('');
         document.getElementById('table-body').innerHTML = times.map(t => `
             <tr>
                 <td>${t}</td>
@@ -123,29 +130,17 @@
 
     function paintCell(cell) {
         const time = cell.dataset.time;
-        if (!activeWorker) {
-            cell.innerText = "UNMANNED";
-            cell.classList.remove('cell-assigned');
-            return;
-        }
-
+        if (!activeWorker) { cell.innerText = "UNMANNED"; cell.classList.remove('cell-assigned'); return; }
         let conflict = false;
-        document.querySelectorAll(`td[data-time="${time}"]`).forEach(td => {
-            if (td !== cell && td.innerText === activeWorker) conflict = true;
-        });
-
-        if (conflict) {
-            alert(`${activeWorker} is already assigned at ${time}!`);
-            return;
-        }
-
+        document.querySelectorAll(`td[data-time="${time}"]`).forEach(td => { if (td !== cell && td.innerText === activeWorker) conflict = true; });
+        if (conflict) { alert(`${activeWorker} is already assigned at ${time}!`); return; }
         cell.innerText = activeWorker;
         cell.classList.add('cell-assigned');
     }
 
     function showSummary() {
         let workerLogs = {};
-        // Capture data from table
+        finalSummaryData = [];
         document.querySelectorAll('#table-body td[data-pos]').forEach(cell => {
             const name = cell.innerText;
             if (name !== "UNMANNED") {
@@ -158,30 +153,45 @@
         for (const [name, tasks] of Object.entries(workerLogs)) {
             let workMinutes = tasks.length * 15;
             let breakMinutes = (times.length * 15) - workMinutes;
-            
-            html += `<div class="summary-card">
-                <strong>Worker: ${name}</strong>
-                <div class="stats-box">
-                    <span>Work: ${workMinutes}m</span> | <span>Break: ${breakMinutes}m</span>
-                </div><hr>`;
-            
             let workerTimeMap = {};
             tasks.forEach(t => workerTimeMap[t.time] = t.pos);
+
+            let scheduleText = "";
             let currentStart = times[0];
 
+            html += `<div class="summary-card"><strong>${name}</strong> (Work: ${workMinutes}m | Break: ${breakMinutes}m)<hr>`;
+            
             times.forEach((t, i) => {
                 let currentPos = workerTimeMap[t] || "Break";
                 if (i === times.length - 1 || (workerTimeMap[times[i+1]] || "Break") !== currentPos) {
-                    let color = currentPos === 'Break' ? 'var(--danger)' : 'var(--text)';
-                    html += `<span style="color:${color}">${currentStart} - ${getNextTime(t)}: ${currentPos}</span><br>`;
+                    let log = `${currentStart} - ${getNextTime(t)}: ${currentPos}`;
+                    html += `<span style="color:${currentPos==='Break'?'var(--danger)':'var(--text)'}">${log}</span><br>`;
+                    scheduleText += log + " | ";
                     if (i < times.length - 1) currentStart = times[i+1];
                 }
             });
             html += `</div>`;
+            finalSummaryData.push({ name, workMinutes, breakMinutes, schedule: scheduleText });
         }
-        document.getElementById('summary-content').innerHTML = html || 'No assignments found.';
+        document.getElementById('summary-content').innerHTML = html || 'No assignments.';
         document.getElementById('setup-zone').classList.add('hidden');
         document.getElementById('summary-zone').classList.remove('hidden');
+    }
+
+    function downloadCSV() {
+        let csv = "Worker,Work Minutes,Break Minutes,Schedule\n";
+        finalSummaryData.forEach(row => {
+            csv += `"${row.name}","${row.workMinutes}","${row.breakMinutes}","${row.schedule}"\n`;
+        });
+        const blob = new Blob([csv], { type: 'text/csv' });
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.setAttribute('hidden', '');
+        a.setAttribute('href', url);
+        a.setAttribute('download', 'shift_summary.csv');
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
     }
 
     function getNextTime(t) {
@@ -190,10 +200,7 @@
         return d.toTimeString().substring(0, 5);
     }
 
-    function backToEdit() {
-        document.getElementById('setup-zone').classList.remove('hidden');
-        document.getElementById('summary-zone').classList.add('hidden');
-    }
+    function backToEdit() { document.getElementById('setup-zone').classList.remove('hidden'); document.getElementById('summary-zone').classList.add('hidden'); }
 </script>
 </body>
 </html>
