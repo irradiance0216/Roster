@@ -14,19 +14,20 @@
         .worker-chip { display: inline-block; padding: 8px 15px; margin: 5px; background: #e9ecef; border-radius: 20px; cursor: pointer; border: 2px solid transparent; }
         .worker-chip.active { border-color: var(--primary); background: var(--selected); }
         .table-scroll-wrapper { width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; background: white; border-radius: 10px; }
-        table { border-collapse: collapse; min-width: 1000px; }
-        th, td { border: 1px solid #ddd; padding: 12px; text-align: center; width: 100px; user-select: none; }
+        table { border-collapse: collapse; min-width: 1200px; }
+        th, td { border: 1px solid #ddd; padding: 12px; text-align: center; width: 110px; user-select: none; }
         td:first-child, th:first-child { position: sticky; left: 0; background: #f8f9fa; z-index: 5; font-weight: bold; }
-        .cell-assigned { background: #d4edda; font-weight: bold; }
+        .cell-assigned { background: #d4edda; font-weight: bold; border: 2px solid var(--accent); }
         .hidden { display: none; }
-        .summary-card { border-left: 5px solid var(--primary); padding: 15px; margin: 10px 0; background: white; }
+        .summary-card { border-left: 5px solid var(--primary); padding: 15px; margin: 10px 0; background: white; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
         .stats-box { display: flex; gap: 15px; margin-top: 5px; font-size: 0.9em; font-weight: bold; color: #555; }
+        .del-pos { display: block; font-size: 10px; color: var(--danger); cursor: pointer; margin-top: 5px; }
     </style>
 </head>
 <body>
 
 <header style="text-align:center;">
-    <h1>Shift Planner & Auditor 📑</h1>
+    <h1>Shift Master 📑</h1>
     <div class="btn-group">
         <button class="btn-primary" onclick="initShift('07:45', '14:45')">Early</button>
         <button class="btn-primary" onclick="initShift('14:45', '21:45')">Afternoon</button>
@@ -43,7 +44,7 @@
         </div>
 
         <div style="margin-bottom: 15px; text-align: center;">
-            <input type="text" id="new-pos" placeholder="Position Name">
+            <input type="text" id="new-pos" placeholder="Custom Position">
             <button class="btn-primary" onclick="addPosition()">+ Add Position</button>
         </div>
         
@@ -65,9 +66,12 @@
 
 <script>
     let times = [], positions = [], workers = [], activeWorker = null;
+    const mandatoryPositions = ["EA", "SA", "WA", "TA", "DA", "CFD1", "CFD2", "CFD3", "BA1", "BA2"];
 
     function initShift(start, end) {
         times = [];
+        positions = [...mandatoryPositions]; // Pre-load mandatory list
+        
         let curr = new Date(`2026-01-01T${start}:00`), stop = new Date(`2026-01-01T${end}:00`);
         if (stop <= curr) stop.setDate(stop.getDate() + 1);
         while (curr < stop) {
@@ -93,13 +97,23 @@
     function selectWorker(name) { activeWorker = name; renderWorkerList(); }
 
     function addPosition() {
-        const val = document.getElementById('new-pos').value;
+        const val = document.getElementById('new-pos').value.trim();
         if (val) { positions.push(val); renderTable(); }
         document.getElementById('new-pos').value = '';
     }
 
+    function removePosition(index) {
+        if(confirm(`Remove ${positions[index]}?`)) {
+            positions.splice(index, 1);
+            renderTable();
+        }
+    }
+
     function renderTable() {
-        document.getElementById('table-head').innerHTML = `<th>Time</th>` + positions.map(p => `<th>${p}</th>`).join('');
+        const head = document.getElementById('table-head');
+        head.innerHTML = `<th>Time</th>` + positions.map((p, i) => 
+            `<th>${p}<span class="del-pos" onclick="removePosition(${i})">✖ Remove</span></th>`).join('');
+        
         document.getElementById('table-body').innerHTML = times.map(t => `
             <tr>
                 <td>${t}</td>
@@ -115,14 +129,13 @@
             return;
         }
 
-        // VALIDATION RULE: Check if worker is already in another position at this time
         let conflict = false;
         document.querySelectorAll(`td[data-time="${time}"]`).forEach(td => {
             if (td !== cell && td.innerText === activeWorker) conflict = true;
         });
 
         if (conflict) {
-            alert(`${activeWorker} is already assigned to a position at ${time}!`);
+            alert(`${activeWorker} is already assigned at ${time}!`);
             return;
         }
 
@@ -132,6 +145,7 @@
 
     function showSummary() {
         let workerLogs = {};
+        // Capture data from table
         document.querySelectorAll('#table-body td[data-pos]').forEach(cell => {
             const name = cell.innerText;
             if (name !== "UNMANNED") {
@@ -146,7 +160,7 @@
             let breakMinutes = (times.length * 15) - workMinutes;
             
             html += `<div class="summary-card">
-                <strong>${name}</strong>
+                <strong>Worker: ${name}</strong>
                 <div class="stats-box">
                     <span>Work: ${workMinutes}m</span> | <span>Break: ${breakMinutes}m</span>
                 </div><hr>`;
@@ -158,14 +172,14 @@
             times.forEach((t, i) => {
                 let currentPos = workerTimeMap[t] || "Break";
                 if (i === times.length - 1 || (workerTimeMap[times[i+1]] || "Break") !== currentPos) {
-                    let style = currentPos === 'Break' ? 'style="color:var(--danger)"' : '';
-                    html += `<span ${style}>${currentStart} - ${getNextTime(t)}: ${currentPos}</span><br>`;
+                    let color = currentPos === 'Break' ? 'var(--danger)' : 'var(--text)';
+                    html += `<span style="color:${color}">${currentStart} - ${getNextTime(t)}: ${currentPos}</span><br>`;
                     if (i < times.length - 1) currentStart = times[i+1];
                 }
             });
             html += `</div>`;
         }
-        document.getElementById('summary-content').innerHTML = html;
+        document.getElementById('summary-content').innerHTML = html || 'No assignments found.';
         document.getElementById('setup-zone').classList.add('hidden');
         document.getElementById('summary-zone').classList.remove('hidden');
     }
