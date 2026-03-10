@@ -3,52 +3,43 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Pro Shift Planner</title>
+    <title>July's Pro Shift Planner</title>
     <style>
-        :root { --primary: #4a90e2; --bg: #f4f7f6; --text: #333; --unmanned: #eee; --accent: #27ae60; --break: #f39c12; }
+        :root { --primary: #4a90e2; --bg: #f4f7f6; --text: #333; --unmanned: #eee; --accent: #27ae60; --selected: #ffeb3b; }
         body { font-family: -apple-system, sans-serif; background: var(--bg); color: var(--text); padding: 15px; margin: 0; }
         
         .btn-group { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; margin-bottom: 15px; }
-        button { padding: 12px; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; }
+        button { padding: 10px 15px; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; }
         .btn-primary { background: var(--primary); color: white; }
-        .btn-success { background: var(--accent); color: white; }
-        .btn-modify { background: var(--break); color: white; }
-
-        /* THE MOBILE FIX: Elastic Horizontal Scroll */
-        .table-scroll-wrapper {
-            width: 100%;
-            overflow-x: auto;
-            -webkit-overflow-scrolling: touch; /* Elastic scrolling for iOS */
-            background: white;
-            border-radius: 10px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        
+        /* Worker Palette */
+        #worker-palette { 
+            background: white; padding: 15px; border-radius: 10px; 
+            margin-bottom: 15px; box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            position: sticky; top: 0; z-index: 100;
         }
-        
-        table { border-collapse: collapse; min-width: 1200px; } /* Ensures 10 positions have room */
-        th, td { border: 1px solid #ddd; padding: 10px; text-align: center; width: 110px; }
-        
-        /* Sticky Time Column */
-        td:first-child, th:first-child {
-            position: sticky;
-            left: 0;
-            background: #f8f9fa;
-            z-index: 5;
-            font-weight: bold;
-            box-shadow: 2px 0 5px rgba(0,0,0,0.05);
+        .worker-chip { 
+            display: inline-block; padding: 8px 15px; margin: 5px; 
+            background: #e9ecef; border-radius: 20px; cursor: pointer; border: 2px solid transparent;
         }
+        .worker-chip.active { border-color: var(--primary); background: var(--selected); box-shadow: 0 0 8px rgba(0,0,0,0.2); }
 
-        thead th { position: sticky; top: 0; background: #eee; z-index: 10; }
+        /* Table Styling */
+        .table-scroll-wrapper { width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; background: white; border-radius: 10px; }
+        table { border-collapse: collapse; min-width: 1000px; cursor: cell; }
+        th, td { border: 1px solid #ddd; padding: 12px; text-align: center; width: 100px; user-select: none; }
         
-        input { width: 85%; padding: 8px; border: 1px solid #ccc; border-radius: 4px; font-size: 14px; }
+        td:first-child, th:first-child { position: sticky; left: 0; background: #f8f9fa; z-index: 5; font-weight: bold; }
+        
+        .cell-assigned { background: #d4edda; font-weight: bold; color: #155724; }
         .hidden { display: none; }
-        .summary-card { border-left: 5px solid var(--primary); padding: 15px; margin: 10px 0; background: white; border-radius: 4px; }
-        .break-tag { color: var(--break); font-weight: bold; }
+        .summary-card { border-left: 5px solid var(--primary); padding: 15px; margin: 10px 0; background: white; }
     </style>
 </head>
 <body>
 
 <header style="text-align:center;">
-    <h1>Shift Planner ⏳</h1>
+    <h1>Shift Painter 🎨</h1>
     <div class="btn-group">
         <button class="btn-primary" onclick="initShift('07:45', '14:45')">Early</button>
         <button class="btn-primary" onclick="initShift('14:45', '21:45')">Afternoon</button>
@@ -58,9 +49,17 @@
 
 <main>
     <div id="setup-zone" class="hidden">
-        <div style="margin-bottom: 15px; display:flex; justify-content:center; gap:10px;">
-            <input type="text" id="new-pos" placeholder="Position Name" style="width:200px;">
-            <button class="btn-success" onclick="addPosition()">+ Add</button>
+        <div id="worker-palette">
+            <strong>1. Add Workers:</strong>
+            <input type="text" id="worker-input" placeholder="Name">
+            <button onclick="addWorker()">Add</button> | 
+            <strong>2. Select a Worker to "Paint":</strong>
+            <div id="worker-list"></div>
+        </div>
+
+        <div style="margin-bottom: 15px;">
+            <input type="text" id="new-pos" placeholder="New Position">
+            <button class="btn-primary" onclick="addPosition()">+ Add Position</button>
         </div>
         
         <div class="table-scroll-wrapper">
@@ -70,35 +69,48 @@
             </table>
         </div>
 
-        <div class="btn-group" style="margin-top:20px;">
-            <button class="btn-success" style="width:100%;" onclick="showSummary()">Generate Summary & Breaks</button>
-        </div>
+        <button class="btn-primary" style="width:100%; margin-top:20px; background:#27ae60;" onclick="showSummary()">Generate Final Summary</button>
     </div>
 
     <div id="summary-zone" class="hidden">
-        <h2>Worker Summary</h2>
         <div id="summary-content"></div>
-        <button class="btn-modify" style="width:100%;" onclick="backToEdit()">Modify Schedule</button>
+        <button class="btn-primary" style="width:100%;" onclick="backToEdit()">Back to Painting</button>
     </div>
 </main>
 
 <script>
-    let times = [];
-    let positions = [];
+    let times = [], positions = [], workers = [], activeWorker = null;
 
     function initShift(start, end) {
         times = [];
-        let curr = new Date(`2026-01-01T${start}:00`);
-        let stop = new Date(`2026-01-01T${end}:00`);
+        let curr = new Date(`2026-01-01T${start}:00`), stop = new Date(`2026-01-01T${end}:00`);
         if (stop <= curr) stop.setDate(stop.getDate() + 1);
-
         while (curr < stop) {
             times.push(curr.toTimeString().substring(0, 5));
             curr.setMinutes(curr.getMinutes() + 15);
         }
         document.getElementById('setup-zone').classList.remove('hidden');
-        document.getElementById('summary-zone').classList.add('hidden');
         renderTable();
+    }
+
+    function addWorker() {
+        const name = document.getElementById('worker-input').value.trim();
+        if (name && !workers.includes(name)) {
+            workers.push(name);
+            renderWorkerList();
+        }
+        document.getElementById('worker-input').value = '';
+    }
+
+    function renderWorkerList() {
+        document.getElementById('worker-list').innerHTML = workers.map(w => 
+            `<span class="worker-chip ${activeWorker === w ? 'active' : ''}" onclick="selectWorker('${w}')">${w}</span>`
+        ).join('') + `<span class="worker-chip" onclick="selectWorker(null)" style="background:#ffcccc">Eraser</span>`;
+    }
+
+    function selectWorker(name) {
+        activeWorker = name;
+        renderWorkerList();
     }
 
     function addPosition() {
@@ -112,54 +124,54 @@
         document.getElementById('table-body').innerHTML = times.map(t => `
             <tr>
                 <td>${t}</td>
-                ${positions.map(p => `<td><input type="text" data-time="${t}" data-pos="${p}" placeholder="UNMANNED"></td>`).join('')}
+                ${positions.map(p => `<td onclick="paintCell(this)" data-time="${t}" data-pos="${p}">UNMANNED</td>`).join('')}
             </tr>`).join('');
     }
 
-    function showSummary() {
-        const inputs = document.querySelectorAll('#table-body input');
-        let workerLogs = {};
+    function paintCell(cell) {
+        if (!activeWorker) {
+            cell.innerText = "UNMANNED";
+            cell.classList.remove('cell-assigned');
+        } else {
+            cell.innerText = activeWorker;
+            cell.classList.add('cell-assigned');
+        }
+    }
 
-        inputs.forEach(input => {
-            const name = input.value.trim();
-            if (name && name.toUpperCase() !== 'UNMANNED') {
+    function showSummary() {
+        let workerLogs = {};
+        document.querySelectorAll('#table-body td[data-pos]').forEach(cell => {
+            const name = cell.innerText;
+            if (name !== "UNMANNED") {
                 if (!workerLogs[name]) workerLogs[name] = [];
-                workerLogs[name].push({ time: input.dataset.time, pos: input.dataset.pos });
+                workerLogs[name].push({ time: cell.dataset.time, pos: cell.dataset.pos });
             }
         });
 
-        let html = '';
+        let html = '<h2>Shift Summary</h2>';
         for (const [name, tasks] of Object.entries(workerLogs)) {
-            html += `<div class="summary-card"><strong>Worker: ${name}</strong><br>`;
-            
-            // Map assigned tasks to specific time slots for this worker
+            html += `<div class="summary-card"><strong>${name}</strong><br>`;
             let workerTimeMap = {};
             tasks.forEach(t => workerTimeMap[t.time] = t.pos);
-
-            let lastType = null; // 'work' or 'break'
+            
             let currentStart = times[0];
-
             times.forEach((t, i) => {
                 let currentPos = workerTimeMap[t] || "Break";
-                let nextTime = getNextTime(t);
-
-                // If the status (Position or Break) changes, or it's the last slot
                 if (i === times.length - 1 || (workerTimeMap[times[i+1]] || "Break") !== currentPos) {
-                    let style = currentPos === "Break" ? 'class="break-tag"' : '';
-                    html += `<span ${style}>${currentStart} - ${nextTime}: ${currentPos}</span><br>`;
+                    let nextTime = getNextTime(t);
+                    html += `<span style="color:${currentPos==='Break'?'#f39c12':'#333'}">${currentStart} - ${nextTime}: ${currentPos}</span><br>`;
                     if (i < times.length - 1) currentStart = times[i+1];
                 }
             });
             html += `</div>`;
         }
-
-        document.getElementById('summary-content').innerHTML = html || '<p>No data.</p>';
+        document.getElementById('summary-content').innerHTML = html;
         document.getElementById('setup-zone').classList.add('hidden');
         document.getElementById('summary-zone').classList.remove('hidden');
     }
 
-    function getNextTime(timeStr) {
-        let d = new Date(`2026-01-01T${timeStr}:00`);
+    function getNextTime(t) {
+        let d = new Date(`2026-01-01T${t}:00`);
         d.setMinutes(d.getMinutes() + 15);
         return d.toTimeString().substring(0, 5);
     }
