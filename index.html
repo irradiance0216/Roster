@@ -3,76 +3,64 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>July's Garden: Ultimate Scheduler</title>
+    <title>July's Garden: Global Balancer</title>
     <style>
-        :root { --primary: #4a90e2; --bg: #f4f7f6; --text: #333; --accent: #27ae60; --danger: #e74c3c; --relief: #9b59b6; --break: #f39c12; --closed: #34495e; }
+        :root { --primary: #4a90e2; --bg: #f4f7f6; --text: #333; --accent: #27ae60; --danger: #e74c3c; --relief: #9b59b6; --closed: #34495e; }
         body { font-family: -apple-system, sans-serif; background: var(--bg); color: var(--text); padding: 15px; margin: 0; }
+        
+        /* Print Logic */
+        @media print {
+            .no-print, button, #palette, #registry-zone, .del-btn { display: none !important; }
+            body { background: white; padding: 0; }
+            .card { box-shadow: none; border: 1px solid #eee; }
+            .table-scroll-wrapper { overflow: visible !important; }
+            table { min-width: 100% !important; font-size: 10px; }
+        }
+
         .card { background: white; padding: 15px; border-radius: 10px; margin-bottom: 15px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        .staff-row { display: grid; grid-template-columns: 1.5fr 1fr 1fr 1fr 0.8fr 0.8fr auto; gap: 5px; margin-bottom: 10px; align-items: center; }
+        #palette { position: sticky; top: 0; z-index: 100; background: white; border-bottom: 2px solid var(--primary); display: flex; flex-wrap: wrap; gap: 8px; padding: 10px; }
         
-        /* Registry Styles */
-        .staff-row { display: grid; grid-template-columns: 1.5fr 1fr 1fr 1fr 1.2fr auto; gap: 5px; margin-bottom: 10px; align-items: center; }
-        .staff-row input, .staff-row select { padding: 8px; border: 1px solid #ddd; border-radius: 4px; font-size: 12px; width: 100%; box-sizing: border-box;}
-
-        /* Painter Palette */
-        #palette { position: sticky; top: 0; z-index: 100; background: white; padding: 10px; border-bottom: 2px solid var(--primary); display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
-        .chip { padding: 6px 12px; border-radius: 20px; cursor: pointer; border: 2px solid #ddd; font-weight: bold; font-size: 13px; transition: 0.2s; }
-        .chip.active { border-color: var(--primary); background: var(--primary); color: white; }
-        .chip-closed { background: var(--closed); color: white; border-color: var(--closed); }
-        .chip-eraser { background: #eee; border-color: #ccc; }
-
-        /* Table Styles */
-        .table-scroll-wrapper { width: 100%; overflow-x: auto; background: white; border-radius: 10px; margin-top: 10px; }
-        table { border-collapse: collapse; min-width: 1200px; }
-        th, td { border: 1px solid #ddd; padding: 10px; text-align: center; width: 110px; cursor: crosshair; user-select: none; transition: background 0.1s; }
-        td:first-child, th:first-child { position: sticky; left: 0; background: #f8f9fa; z-index: 5; font-weight: bold; }
+        table { border-collapse: collapse; min-width: 1200px; width: 100%; }
+        th, td { border: 1px solid #ddd; padding: 8px; text-align: center; }
+        .cell-fixed { background: #d4edda; font-weight: bold; }
+        .cell-relief { background: #e1d5e7; color: #6a1b9a; font-style: italic; }
+        .cell-closed { background: var(--closed); color: white; }
         
-        .cell-fixed { background: #d4edda; font-weight: bold; border: 1px solid var(--accent); }
-        .cell-relief { background: #e1d5e7; color: #6a1b9a; font-style: italic; border: 1px solid var(--relief); }
-        .cell-closed { background: var(--closed); color: white; border: 1px solid #2c3e50; }
-        
-        /* Summary Grid */
-        .summary-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 15px; margin-top: 20px; }
-        .stat-card { background: white; padding: 12px; border-radius: 8px; border-left: 6px solid #ccc; font-size: 0.9em; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
-        .under-break { border-left-color: var(--danger); background: #fff5f5; }
-        .good-break { border-left-color: var(--accent); background: #fafffa; }
-
-        .btn-group { display: flex; gap: 8px; justify-content: center; margin-bottom: 15px; }
-        button { padding: 10px 15px; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; transition: opacity 0.2s; }
-        button:hover { opacity: 0.8; }
-        .btn-primary { background: var(--primary); color: white; }
-        .btn-relief { background: var(--relief); color: white; }
-        .hidden { display: none; }
+        .summary-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 15px; }
+        .stat-card { padding: 12px; border-radius: 8px; border-left: 6px solid #ccc; background: white; }
+        .btn-primary { background: var(--primary); color: white; border: none; padding: 10px; border-radius: 5px; cursor: pointer; }
     </style>
 </head>
 <body>
 
-<header style="text-align:center;">
-    <h1>July's Shift Master Pro 🌸</h1>
-    <div class="btn-group">
-        <button class="btn-primary" onclick="initShift('07:45', '14:45')">Early Shift</button>
-        <button class="btn-primary" onclick="initShift('14:45', '21:45')">Afternoon Shift</button>
-        <button class="btn-primary" onclick="initShift('21:45', '07:45')">Night Shift</button>
+<header style="text-align:center;" class="no-print">
+    <h1>Shift Master: Global Balancer 🌸</h1>
+    <div style="margin-bottom:10px;">
+        <button onclick="initShift('07:45', '14:45')">Early</button>
+        <button onclick="initShift('14:45', '21:45')">Afternoon</button>
+        <button onclick="initShift('21:45', '07:45')">Night</button>
+        <button class="btn-primary" style="background:var(--accent)" onclick="window.print()">🖨️ Print Final Roster</button>
     </div>
 </header>
 
 <main>
-    <section id="registry-zone" class="hidden card">
-        <h3>1. Staff Registry & Duty Times</h3>
-        <p><small>Changes are saved automatically to your browser.</small></p>
+    <section id="registry-zone" class="card no-print">
+        <h3>1. Global Staffing & Target Breaks</h3>
         <div id="staff-list"></div>
-        <div style="display:flex; gap:10px; margin-top:10px;">
-            <button onclick="addStaffRow()">+ Add Worker</button>
-            <button class="btn-relief" onclick="startEditor()">2. Open Timeline Editor ➔</button>
-        </div>
+        <button onclick="addStaffRow()">+ Add Worker</button>
+        <button class="btn-primary" style="background:var(--relief)" onclick="startEditor()">2. Open Timeline & Balance ➔</button>
     </section>
 
     <section id="editor-zone" class="hidden">
-        <div id="palette" class="card">
+        <div id="palette" class="no-print card">
             <strong>Active Brush:</strong>
-            <div id="worker-chips" style="display:flex; gap:5px; flex-wrap:wrap; margin:0 10px;"></div>
-            <div class="chip chip-closed" onclick="setBrush('CLOSED')">CLOSED</div>
-            <div class="chip chip-eraser" onclick="setBrush('UNMANNED')">ERASER</div>
-            <button class="btn-relief" style="margin-left:auto;" onclick="smartFillFixedBreaks()">✨ Smart-Fill Breaks</button>
+            <div id="worker-chips" style="display:flex; gap:5px;"></div>
+            <div style="border-left: 1px solid #ccc; padding-left:10px; display:flex; gap:5px;">
+                <button onclick="setBrush('CLOSED')" style="background:var(--closed); color:white;">CLOSED</button>
+                <button onclick="setBrush('UNMANNED')" style="background:#eee;">ERASER</button>
+                <button class="btn-primary" onclick="runGlobalBalancer()">🚀 Run Global Auto-Fill</button>
+            </div>
         </div>
 
         <div class="table-scroll-wrapper card">
@@ -82,7 +70,7 @@
             </table>
         </div>
 
-        <h3>3. Fairness Audit (90m Target for Fixed)</h3>
+        <h3>Fairness Dashboard</h3>
         <div id="live-summary" class="summary-grid"></div>
     </section>
 </main>
@@ -91,7 +79,6 @@
     let times = [], positions = [], activeBrush = null, workers = [];
     const mandatoryPositions = ["EA", "SA", "WA", "TA", "DA", "CFD1", "CFD2", "CFD3", "BA1", "BA2"];
 
-    // Initialize Shift Times
     function initShift(start, end) {
         times = [];
         positions = [...mandatoryPositions];
@@ -101,23 +88,21 @@
             times.push(curr.toTimeString().substring(0, 5));
             curr.setMinutes(curr.getMinutes() + 15);
         }
-        
         document.getElementById('registry-zone').classList.remove('hidden');
-        document.getElementById('editor-zone').classList.add('hidden');
         loadSavedStaff();
     }
 
-    // Registry Functions
     function addStaffRow(saved = null) {
         const row = document.createElement('div');
         row.className = 'staff-row';
         row.innerHTML = `
-            <input type="text" placeholder="Name" class="s-name" onchange="saveStaff()" value="${saved?.name || ''}">
-            <select class="s-pos" onchange="saveStaff()">${positions.map(p => `<option value="${p}" ${saved?.pos === p ? 'selected' : ''}>${p}</option>`).join('')}<option value="Relief" ${saved?.pos === 'Relief' ? 'selected' : ''}>Relief</option></select>
-            <input type="time" class="s-start" onchange="saveStaff()" value="${saved?.start || times[0]}">
-            <input type="time" class="s-end" onchange="saveStaff()" value="${saved?.end || times[times.length-1]}">
-            <select class="s-role" onchange="saveStaff()"><option value="Fixed" ${saved?.role === 'Fixed' ? 'selected' : ''}>Fixed</option><option value="Relief" ${saved?.role === 'Relief' ? 'selected' : ''}>Relief</option></select>
-            <button onclick="this.parentElement.remove(); saveStaff();" style="background:none; color:red;">✖</button>
+            <input type="text" placeholder="Name" class="s-name" value="${saved?.name || ''}">
+            <select class="s-pos">${positions.map(p => `<option value="${p}" ${saved?.pos === p ? 'selected' : ''}>${p}</option>`).join('')}<option value="Relief" ${saved?.pos === 'Relief' ? 'selected' : ''}>Relief</option></select>
+            <input type="time" class="s-start" value="${saved?.start || times[0]}">
+            <input type="time" class="s-end" value="${saved?.end || times[times.length-1]}">
+            <select class="s-role"><option value="Fixed" ${saved?.role === 'Fixed' ? 'selected' : ''}>Fixed</option><option value="Relief" ${saved?.role === 'Relief' ? 'selected' : ''}>Relief</option></select>
+            <input type="number" placeholder="Tgt" class="s-target" title="Target Break (mins)" value="${saved?.target || (saved?.role === 'Fixed' ? 90 : 60)}" style="width:50px;">
+            <button class="del-btn" onclick="this.parentElement.remove(); saveStaff();" style="color:red; background:none; border:none; cursor:pointer;">✖</button>
         `;
         document.getElementById('staff-list').appendChild(row);
         saveStaff();
@@ -129,22 +114,21 @@
             pos: row.querySelector('.s-pos').value,
             start: row.querySelector('.s-start').value,
             end: row.querySelector('.s-end').value,
-            role: row.querySelector('.s-role').value
+            role: row.querySelector('.s-role').value,
+            target: parseInt(row.querySelector('.s-target').value) || 0
         }));
-        localStorage.setItem('staffData_V3', JSON.stringify(workers));
+        localStorage.setItem('staff_global_v4', JSON.stringify(workers));
     }
 
     function loadSavedStaff() {
-        const saved = JSON.parse(localStorage.getItem('staffData_V3'));
+        const saved = JSON.parse(localStorage.getItem('staff_global_v4'));
         document.getElementById('staff-list').innerHTML = "";
         if (saved && saved.length > 0) saved.forEach(s => addStaffRow(s));
         else addStaffRow();
     }
 
-    // Editor Functions
     function startEditor() {
         saveStaff();
-        if (workers.filter(w => w.name).length === 0) { alert("Please add at least one worker name!"); return; }
         document.getElementById('editor-zone').classList.remove('hidden');
         renderPalette();
         renderTable();
@@ -153,19 +137,10 @@
 
     function renderPalette() {
         const container = document.getElementById('worker-chips');
-        container.innerHTML = workers.filter(w => w.name).map(w => `
-            <div class="chip" id="chip-${w.name}" onclick="setBrush('${w.name}')">${w.name} (${w.role[0]})</div>
-        `).join('');
+        container.innerHTML = workers.filter(w => w.name).map(w => `<button class="chip" onclick="setBrush('${w.name}')" style="padding:5px 10px; border-radius:15px; border:1px solid #ccc; cursor:pointer;">${w.name}</button>`).join('');
     }
 
-    function setBrush(val) {
-        activeBrush = val;
-        document.querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
-        if(val !== 'CLOSED' && val !== 'UNMANNED') {
-            const chip = document.getElementById(`chip-${val}`);
-            if(chip) chip.classList.add('active');
-        }
-    }
+    function setBrush(val) { activeBrush = val; }
 
     function renderTable() {
         document.getElementById('table-head').innerHTML = `<th>Time</th>` + positions.map(p => `<th>${p}</th>`).join('');
@@ -175,70 +150,48 @@
 
     function paint(cell) {
         if (!activeBrush) return;
-        
-        if (activeBrush !== 'UNMANNED' && activeBrush !== 'CLOSED') {
-            let conflict = false;
-            document.querySelectorAll(`td[data-time="${cell.dataset.time}"]`).forEach(td => {
-                if (td !== cell && td.innerText === activeBrush) conflict = true;
-            });
-            if (conflict) { alert(`${activeBrush} is already working elsewhere at ${cell.dataset.time}!`); return; }
-        }
-
         cell.innerText = activeBrush;
-        cell.className = activeBrush === 'CLOSED' ? 'cell-closed' : 
-                         (activeBrush === 'UNMANNED' ? '' : 
-                         (workers.find(w => w.name === activeBrush)?.role === 'Fixed' ? 'cell-fixed' : 'cell-relief'));
+        cell.className = activeBrush === 'CLOSED' ? 'cell-closed' : (activeBrush === 'UNMANNED' ? '' : 'cell-fixed');
         updateAudit();
     }
 
-    // SMART FILL ALGORITHM
-    function smartFillFixedBreaks() {
+    // THE GLOBAL BALANCER
+    function runGlobalBalancer() {
         const fixed = workers.filter(w => w.role === 'Fixed' && w.name);
         const relief = workers.filter(w => w.role === 'Relief' && w.name);
 
-        if (relief.length === 0) { alert("Add at least one Relief worker to the registry first!"); return; }
-
-        // Initial base fill: Assign Fixed workers to their Home Positions
+        // 1. Initial Fill: Put Fixed workers in their home positions
         fixed.forEach(fw => {
             times.forEach(t => {
                 if (t >= fw.start && t < fw.end) {
                     const cell = document.querySelector(`td[data-time="${t}"][data-pos="${fw.pos}"]`);
-                    if (cell && cell.innerText === 'UNMANNED') {
-                        cell.innerText = fw.name;
-                        cell.className = 'cell-fixed';
-                    }
+                    if (cell && cell.innerText === 'UNMANNED') { cell.innerText = fw.name; cell.className = 'cell-fixed'; }
                 }
             });
         });
 
-        // Smart Swap for 90m Breaks
-        fixed.forEach((fw, index) => {
+        // 2. Relief Coverage: Global resource pool covering breaks
+        fixed.forEach((fw, idx) => {
             let duty = times.filter(t => t >= fw.start && t < fw.end);
-            let reliefW = relief[index % relief.length];
+            let neededSlots = Math.ceil(fw.target / 15);
+            let mealStart = Math.floor(duty.length / 2) - 2;
 
-            // 1. Meal Break (60m) - Mid shift
-            let mealIdx = Math.floor(duty.length / 2) - 2 + (index % 3);
-            for (let i = 0; i < 4; i++) {
-                let t = duty[mealIdx + i];
-                if(t) assignRelief(reliefW.name, fw.pos, t);
-            }
-
-            // 2. Short Break (30m) - Late shift
-            let shortIdx = duty.length - 6 + (index % 2);
-            for (let i = 0; i < 2; i++) {
-                let t = duty[shortIdx + i];
-                if(t) assignRelief(reliefW.name, fw.pos, t);
+            for (let i = 0; i < neededSlots; i++) {
+                let t = duty[mealStart + i];
+                if (!t) t = duty[i]; // Fallback if mid-shift is invalid
+                
+                // Find ANY available relief worker for this time
+                let availableRelief = relief.find(r => t >= r.start && t < r.end && !isWorkerBusy(r.name, t));
+                if (availableRelief) {
+                    const cell = document.querySelector(`td[data-time="${t}"][data-pos="${fw.pos}"]`);
+                    if (cell && cell.innerText !== 'CLOSED') {
+                        cell.innerText = availableRelief.name;
+                        cell.className = 'cell-relief';
+                    }
+                }
             }
         });
         updateAudit();
-    }
-
-    function assignRelief(reliefName, pos, time) {
-        const cell = document.querySelector(`td[data-time="${time}"][data-pos="${pos}"]`);
-        if (cell && cell.innerText !== 'CLOSED' && !isWorkerBusy(reliefName, time)) {
-            cell.innerText = reliefName;
-            cell.className = 'cell-relief';
-        }
     }
 
     function isWorkerBusy(name, time) {
@@ -250,28 +203,20 @@
     function updateAudit() {
         const summary = document.getElementById('live-summary');
         let html = '';
-
         workers.filter(w => w.name).forEach(w => {
             const onDuty = times.filter(t => t >= w.start && t < w.end);
             let workCount = 0;
             document.querySelectorAll('td[data-pos]').forEach(c => { if(c.innerText === w.name) workCount++; });
-
-            let workMin = workCount * 15;
-            let totalDutyMin = onDuty.length * 15;
-            let breakMin = totalDutyMin - workMin;
-            
-            let statusClass = (w.role === 'Fixed' && breakMin < 90) ? 'under-break' : 'good-break';
-            let detail = (w.role === 'Fixed') ? `Target: 90m | Diff: ${breakMin - 90}m` : `Relief Buffer`;
-
-            html += `
-                <div class="stat-card ${statusClass}">
-                    <strong>${w.name}</strong> (${w.role})<br>
-                    On Duty: ${w.start} - ${w.end}<br>
-                    Work: ${workMin}m | <strong>Break: ${breakMin}m</strong><br>
-                    <small>${detail}</small>
-                </div>`;
+            let workMin = workCount * 15, totalDuty = onDuty.length * 15, breakMin = totalDuty - workMin;
+            let status = (breakMin < w.target) ? 'border-left-color:red; background:#fff5f5' : 'border-left-color:green; background:#fafffa';
+            html += `<div class="stat-card" style="${status}"><strong>${w.name}</strong> (${w.role})<br>Duty: ${w.start}-${w.end}<br>Work: ${workMin}m | Break: ${breakMin}m (Tgt: ${w.target}m)</div>`;
         });
         summary.innerHTML = html;
+    }
+
+    function getNextTime(t) {
+        let d = new Date(`2026-01-01T${t}:00`); d.setMinutes(d.getMinutes() + 15);
+        return d.toTimeString().substring(0, 5);
     }
 </script>
 </body>
