@@ -3,70 +3,66 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>July's Garden: Manual Scheduler</title>
+    <title>July's Garden: Shift Master</title>
     <style>
         :root { --primary: #4a90e2; --bg: #f4f7f6; --text: #333; --accent: #27ae60; --danger: #e74c3c; --closed: #34495e; --break: #f39c12; }
-        body { font-family: -apple-system, sans-serif; background: var(--bg); color: var(--text); padding: 10px; margin: 0; }
+        body { font-family: -apple-system, sans-serif; background: var(--bg); color: var(--text); padding: 10px; margin: 0; line-height: 1.4; }
         
         @media print { .no-print { display: none !important; } .card { box-shadow: none; border: 1px solid #ddd; } table { font-size: 10px; } }
 
         .card { background: white; padding: 15px; border-radius: 10px; margin-bottom: 15px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
-        .btn-group { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; margin-bottom: 15px; }
-        button { padding: 10px 15px; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; }
+        .btn-group { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; margin-bottom: 10px; }
+        button { padding: 10px 15px; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; transition: opacity 0.2s; }
+        button:hover { opacity: 0.8; }
         .btn-primary { background: var(--primary); color: white; }
+        .btn-accent { background: var(--accent); color: white; }
         
         #palette { position: sticky; top: 0; z-index: 1000; background: white; padding: 10px; border-bottom: 3px solid var(--primary); display: flex; flex-wrap: wrap; gap: 8px; align-items: center;}
         .chip { padding: 8px 15px; border-radius: 20px; border: 2px solid #ddd; cursor: pointer; background: white; font-size: 14px; user-select: none; }
         .chip.active { border-color: var(--primary); background: var(--primary); color: white; }
-        .chip-closed { background: var(--closed); color: white; border-color: var(--closed); }
 
-        .table-wrapper { width: 100%; overflow-x: auto; background: white; border-radius: 10px; }
+        .table-wrapper { width: 100%; overflow-x: auto; background: white; border-radius: 10px; max-height: 70vh; }
         table { border-collapse: collapse; min-width: 1000px; width: 100%; }
         th, td { border: 1px solid #ddd; padding: 12px; text-align: center; user-select: none; touch-action: none; }
-        th { background: #f8f9fa; position: sticky; top: 0; }
-        td:first-child { position: sticky; left: 0; background: #f8f9fa; font-weight: bold; z-index: 2; }
+        th { background: #f8f9fa; position: sticky; top: 0; z-index: 10; }
+        td:first-child { position: sticky; left: 0; background: #f8f9fa; font-weight: bold; z-index: 5; }
         
         .painted { background: #e3f2fd; font-weight: bold; color: var(--primary); }
         .painted-closed { background: var(--closed); color: white; }
 
-        /* Summary View Improvements */
-        .summary-item { border-left: 5px solid var(--primary); padding: 15px; margin-bottom: 15px; background: white; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
+        .summary-item { border-left: 5px solid var(--primary); padding: 15px; margin-bottom: 15px; background: white; border-radius: 8px; }
         .timeline-row { display: flex; justify-content: space-between; padding: 4px 0; border-bottom: 1px dashed #eee; font-family: monospace; }
-        .time-label { color: #666; font-weight: bold; }
         .pos-label { color: var(--primary); font-weight: bold; }
-        .break-label { color: var(--break); font-weight: bold; }
+        .conflict-card { border-left-color: var(--danger) !important; background: #fff5f5 !important; }
     </style>
 </head>
 <body>
 
 <div class="no-print">
-    <h2 style="text-align:center;">Shift Builder 🌸</h2>
-    <div class="btn-group">
-        <button class="btn-primary" onclick="setupShift('07:45', '14:45')">Early</button>
-        <button class="btn-primary" onclick="setupShift('14:45', '21:45')">Afternoon</button>
-        <button class="btn-primary" onclick="setupShift('21:45', '07:45')">Night</button>
-    </div>
-
-    <div id="setup-area" class="card" style="display:none;">
-        <h3>1. Manage Positions</h3>
-        <div style="display:flex; gap:5px; margin-bottom:15px;">
-            <input type="text" id="new-pos" placeholder="e.g. CFD1" style="flex:1; padding:8px;">
-            <button onclick="addPos()" class="btn-primary">Add</button>
+    <h2 style="text-align:center;">Multi-Shift Master 🌸</h2>
+    <div class="card">
+        <h3>1. Staff & Duty Assignment</h3>
+        <div id="staff-input-list"></div>
+        <button onclick="addNewStaff()" class="btn-accent">+ Add Staff Member</button>
+        <hr style="margin:20px 0;">
+        <h3>2. Choose View Window</h3>
+        <div class="btn-group">
+            <button class="btn-primary" onclick="setView('07:45', '15:00')">Early View</button>
+            <button class="btn-primary" onclick="setView('14:30', '22:00')">Afternoon View</button>
+            <button class="btn-primary" onclick="setView('21:45', '08:00')">Night View</button>
         </div>
-        <div id="pos-chips" style="display:flex; gap:5px; flex-wrap:wrap; margin-bottom:20px;"></div>
-
-        <h3>2. Input Workers</h3>
-        <textarea id="worker-names" placeholder="Enter names (one per line)" style="width:100%; height:80px; padding:10px; border-radius:5px; border:1px solid #ccc;"></textarea>
-        <button class="btn-primary" style="width:100%; margin-top:10px;" onclick="startBuilding()">3. Start Painting ➔</button>
     </div>
 </div>
 
 <div id="editor-area" style="display:none;">
     <div id="palette" class="no-print card">
         <div id="worker-palette" style="display:flex; gap:5px; flex-wrap:wrap;"></div>
-        <div class="chip chip-closed" onclick="selectBrush('CLOSED')">CLOSED</div>
+        <div class="chip" onclick="selectBrush('CLOSED')" style="background:var(--closed);color:white">CLOSED</div>
         <div class="chip" onclick="selectBrush('UNMANNED')">Eraser</div>
-        <button onclick="window.print()" style="margin-left:auto; background:var(--accent); color:white;">Print PDF</button>
+        <div style="margin-left:auto; display:flex; gap:5px;">
+            <button onclick="downloadCSV()" style="background:#555; color:white;">📥 CSV</button>
+            <button onclick="window.print()" class="btn-accent">🖨️ Print</button>
+        </div>
     </div>
 
     <div class="table-wrapper card">
@@ -77,132 +73,195 @@
     </div>
 
     <div id="summary-area" class="card">
-        <h3>Shift Summary (Consecutive Periods)</h3>
+        <h3>Daily Summary & Conflict Audit</h3>
         <div id="summary-list"></div>
     </div>
 </div>
 
 <script>
-    let times = [], positions = ["EA", "SA", "WA", "TA", "DA"], workers = [], activeBrush = null, isDragging = false;
+    const shiftPresets = {
+        "E1": ["07:45", "15:00"], "E2": ["07:45", "16:00"], "F1": ["08:45", "17:00"],
+        "G1": ["09:45", "18:00"], "H1": ["10:45", "19:00"], "J1": ["11:45", "20:00"],
+        "A1": ["14:30", "22:00"], "N1": ["21:45", "08:00"]
+    };
+    
+    let fullDayTimes = []; 
+    let positions = ["EA", "SA", "WA", "TA", "DA"];
+    let staffData = []; 
+    let assignments = {}; 
+    let activeBrush = null, isDragging = false;
 
-    function setupShift(start, end) {
-        times = [];
-        let curr = new Date(`2026-01-01T${start}:00`), stop = new Date(`2026-01-01T${end}:00`);
-        if (stop <= curr) stop.setDate(stop.getDate() + 1);
-        while (curr < stop) {
-            times.push(curr.toTimeString().substring(0, 5));
+    (function initMasterClock() {
+        let curr = new Date("2026-01-01T00:00:00");
+        for(let i=0; i<96; i++) {
+            fullDayTimes.push(curr.toTimeString().substring(0,5));
             curr.setMinutes(curr.getMinutes() + 15);
         }
-        document.getElementById('setup-area').style.display = 'block';
-        renderPos();
+    })();
+
+    function addNewStaff() {
+        const div = document.createElement('div');
+        div.className = 'btn-group';
+        div.style.marginBottom = "5px";
+        div.innerHTML = `
+            <input type="text" placeholder="Name" class="staff-name" style="padding:8px; border:1px solid #ccc; flex:1;">
+            <select class="staff-shift" onchange="applyPreset(this)" style="padding:8px;">
+                <option value="">Shift</option>
+                ${Object.keys(shiftPresets).map(k => `<option value="${k}">${k}</option>`).join('')}
+            </select>
+            <input type="time" class="staff-start"> - <input type="time" class="staff-end">
+            <button onclick="this.parentElement.remove()" style="color:var(--danger); background:none;">×</button>
+        `;
+        document.getElementById('staff-input-list').appendChild(div);
     }
 
-    function addPos() {
-        let val = document.getElementById('new-pos').value.trim();
-        if (val) { positions.push(val); renderPos(); document.getElementById('new-pos').value = ''; }
+    function applyPreset(sel) {
+        if(!sel.value) return;
+        const [s, e] = shiftPresets[sel.value];
+        const row = sel.parentElement;
+        row.querySelector('.staff-start').value = s;
+        row.querySelector('.staff-end').value = e;
     }
 
-    function renderPos() {
-        document.getElementById('pos-chips').innerHTML = positions.map((p, i) => 
-            `<span style="background:#eee; padding:5px 10px; border-radius:15px; font-size:12px;">${p} <b onclick="positions.splice(${i},1);renderPos()" style="cursor:pointer;color:red">×</b></span>`).join('');
-    }
+    function setView(viewStart, viewEnd) {
+        staffData = Array.from(document.querySelectorAll('#staff-input-list > div')).map(row => ({
+            name: row.querySelector('.staff-name').value.trim(),
+            start: row.querySelector('.staff-start').value,
+            end: row.querySelector('.staff-end').value
+        })).filter(s => s.name);
 
-    function startBuilding() {
-        workers = document.getElementById('worker-names').value.split('\n').filter(n => n.trim());
-        if (workers.length === 0) return alert("Add some workers first!");
+        if(staffData.length === 0) return alert("Add staff first!");
 
-        document.getElementById('setup-area').style.display = 'none';
         document.getElementById('editor-area').style.display = 'block';
         
-        document.getElementById('worker-palette').innerHTML = workers.map(w => 
-            `<div class="chip" onclick="selectBrush('${w}')" id="brush-${w}">${w}</div>`).join('');
-        
+        let viewTimes = [];
+        let curr = new Date(`2026-01-01T${viewStart}:00`);
+        let stop = new Date(`2026-01-01T${viewEnd}:00`);
+        if (stop <= curr) stop.setDate(stop.getDate() + 1);
+        while (curr < stop) {
+            viewTimes.push(curr.toTimeString().substring(0, 5));
+            curr.setMinutes(curr.getMinutes() + 15);
+        }
+        renderEditor(viewTimes);
+        updateSummary();
+    }
+
+    function renderEditor(viewTimes) {
+        document.getElementById('worker-palette').innerHTML = staffData.map(s => 
+            `<div class="chip" onclick="selectBrush('${s.name}')" id="brush-${s.name}">${s.name}</div>`).join('');
+
         document.getElementById('table-head').innerHTML = `<th>Time</th>` + positions.map(p => `<th>${p}</th>`).join('');
-        document.getElementById('table-body').innerHTML = times.map(t => `
-            <tr>
-                <td>${t}</td>
-                ${positions.map(p => `<td onpointerdown="startPaint(this)" onpointerenter="continuePaint(this)" data-time="${t}" data-pos="${p}">-</td>`).join('')}
-            </tr>`).join('');
         
+        document.getElementById('table-body').innerHTML = viewTimes.map(t => {
+            return `<tr><td>${t}</td>${positions.map(p => {
+                let currentVal = assignments[`${t}-${p}`] || "-";
+                let classList = currentVal === "CLOSED" ? "painted-closed" : (currentVal !== "-" ? "painted" : "");
+                return `<td onpointerdown="startPaint(this)" onpointerenter="continuePaint(this)" 
+                            data-time="${t}" data-pos="${p}" class="${classList}">${currentVal}</td>`;
+            }).join('')}</tr>`;
+        }).join('');
+
         window.onpointerup = () => { isDragging = false; updateSummary(); };
     }
 
     function selectBrush(name) {
         activeBrush = name;
         document.querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
-        if (name !== 'UNMANNED' && name !== 'CLOSED') document.getElementById(`brush-${name}`).classList.add('active');
+        if(name !== 'UNMANNED' && name !== 'CLOSED') document.getElementById(`brush-${name}`).classList.add('active');
     }
 
     function startPaint(el) { isDragging = true; paint(el); }
-    function continuePaint(el) { if (isDragging) paint(el); }
+    function continuePaint(el) { if(isDragging) paint(el); }
 
     function paint(el) {
-        if (!activeBrush) return;
-        el.innerText = activeBrush === 'UNMANNED' ? '-' : activeBrush;
-        el.className = activeBrush === 'CLOSED' ? 'painted-closed' : (activeBrush === 'UNMANNED' ? '' : 'painted');
+        if(!activeBrush) return;
+        let t = el.dataset.time;
+        let p = el.dataset.pos;
+        
+        if (activeBrush === 'UNMANNED') { assignments[`${t}-${p}`] = "-"; el.innerText = "-"; el.className = ""; updateSummary(); return; }
+        if (activeBrush === 'CLOSED') { assignments[`${t}-${p}`] = "CLOSED"; el.innerText = "CLOSED"; el.className = "painted-closed"; updateSummary(); return; }
+
+        let worker = staffData.find(s => s.name === activeBrush);
+        if(!isTimeInRange(t, worker.start, worker.end)) return;
+
+        // Conflict Check
+        let existingPos = positions.find(pos => pos !== p && assignments[`${t}-${pos}`] === activeBrush);
+        if (existingPos) {
+            alert(`CONFLICT: ${activeBrush} is already at ${existingPos} during ${t}!`);
+            isDragging = false;
+            return;
+        }
+
+        assignments[`${t}-${p}`] = activeBrush;
+        el.innerText = activeBrush;
+        el.className = "painted";
+        updateSummary();
+    }
+
+    function isTimeInRange(target, start, end) {
+        if (start < end) return target >= start && target < end;
+        return target >= start || target < end;
     }
 
     function updateSummary() {
-        let summaryHtml = '';
-        
-        workers.forEach(worker => {
-            let totalWork = 0;
-            let timeline = [];
-
-            // Step 1: Create a flat map of what this worker is doing at every 15-min interval
-            times.forEach(t => {
-                let currentPos = "Break";
-                document.querySelectorAll(`td[data-time="${t}"]`).forEach(td => {
-                    if (td.innerText === worker) currentPos = td.dataset.pos;
-                });
-                timeline.push({ time: t, pos: currentPos });
-                if (currentPos !== "Break") totalWork += 15;
+        let html = '';
+        staffData.forEach(worker => {
+            let workMin = 0, timeline = [], hasConflict = false;
+            
+            fullDayTimes.forEach(t => {
+                if(!isTimeInRange(t, worker.start, worker.end)) return;
+                let hits = positions.filter(p => assignments[`${t}-${p}`] === worker.name);
+                if(hits.length > 1) hasConflict = true;
+                let curP = hits.length > 0 ? hits[0] : "Break";
+                timeline.push({ time: t, pos: curP });
+                if(curP !== "Break") workMin += 15;
             });
 
-            // Step 2: Merge consecutive identical positions
             let merged = [];
-            if (timeline.length > 0) {
-                let start = timeline[0].time;
-                let currentPos = timeline[0].pos;
-
-                for (let i = 1; i <= timeline.length; i++) {
-                    let isEnd = (i === timeline.length);
-                    if (isEnd || timeline[i].pos !== currentPos) {
-                        let endTime = isEnd ? calculateEndTime(timeline[i-1].time) : timeline[i].time;
-                        merged.push({ start, end: endTime, pos: currentPos });
-                        if (!isEnd) {
-                            start = timeline[i].time;
-                            currentPos = timeline[i].pos;
-                        }
+            if(timeline.length > 0) {
+                let s = timeline[0].time, curP = timeline[0].pos;
+                for(let i=1; i<=timeline.length; i++){
+                    if(i===timeline.length || timeline[i].pos !== curP) {
+                        merged.push({s, e: (i===timeline.length ? getEnd(timeline[i-1].time) : timeline[i].time), p: curP});
+                        if(i<timeline.length){ s = timeline[i].time; curP = timeline[i].pos; }
                     }
                 }
             }
-
-            // Step 3: Render worker card
-            let totalBreak = (times.length * 15) - totalWork;
-            summaryHtml += `
-                <div class="summary-item">
-                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; border-bottom: 2px solid #f0f0f0; padding-bottom:5px;">
-                        <span style="font-size:1.2em;"><strong>${worker}</strong></span>
-                        <span>Work: <b>${totalWork}m</b> | Break: <b>${totalBreak}m</b></span>
-                    </div>
-                    ${merged.map(m => `
-                        <div class="timeline-row">
-                            <span class="time-label">${m.start} - ${m.end}</span>
-                            <span class="${m.pos === 'Break' ? 'break-label' : 'pos-label'}">${m.pos}</span>
-                        </div>
-                    `).join('')}
-                </div>`;
+            let totalDuty = timeline.length * 15;
+            html += `<div class="summary-item ${hasConflict ? 'conflict-card' : ''}">
+                <strong>${worker.name}</strong> ${hasConflict ? '⚠️' : ''} | Work: ${workMin}m | Break: ${totalDuty - workMin}m<br>
+                <small>${worker.start}-${worker.end}</small>
+                ${merged.map(m => `<div class="timeline-row"><span>${m.s}-${m.e}</span><span class="pos-label">${m.p}</span></div>`).join('')}
+            </div>`;
         });
-        document.getElementById('summary-list').innerHTML = summaryHtml;
+        document.getElementById('summary-list').innerHTML = html;
     }
 
-    function calculateEndTime(startTime) {
-        let [h, m] = startTime.split(':').map(Number);
-        m += 15;
-        if (m >= 60) { h++; m = 0; }
-        return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+    function getEnd(t) {
+        let [h, m] = t.split(':').map(Number);
+        m += 15; if(m>=60){h=(h+1)%24; m=0;}
+        return `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}`;
     }
+
+    function downloadCSV() {
+        let csv = "Time," + positions.join(",") + "\n";
+        // Export the current view's rows
+        document.querySelectorAll('#table-body tr').forEach(row => {
+            let rowData = Array.from(row.querySelectorAll('td')).map(td => td.innerText);
+            csv += rowData.join(",") + "\n";
+        });
+        const blob = new Blob([csv], { type: 'text/csv' });
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.setAttribute('hidden', '');
+        a.setAttribute('href', url);
+        a.setAttribute('download', 'july_garden_roster.csv');
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+    }
+
+    addNewStaff();
 </script>
 </body>
 </html>
