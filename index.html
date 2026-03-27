@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>July's Garden: Manual Scheduler</title>
     <style>
-        :root { --primary: #4a90e2; --bg: #f4f7f6; --text: #333; --accent: #27ae60; --danger: #e74c3c; --closed: #34495e; }
+        :root { --primary: #4a90e2; --bg: #f4f7f6; --text: #333; --accent: #27ae60; --danger: #e74c3c; --closed: #34495e; --break: #f39c12; }
         body { font-family: -apple-system, sans-serif; background: var(--bg); color: var(--text); padding: 10px; margin: 0; }
         
         @media print { .no-print { display: none !important; } .card { box-shadow: none; border: 1px solid #ddd; } table { font-size: 10px; } }
@@ -15,13 +15,11 @@
         button { padding: 10px 15px; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; }
         .btn-primary { background: var(--primary); color: white; }
         
-        /* Drag-to-Paint Palette */
-        #palette { position: sticky; top: 0; z-index: 1000; background: white; padding: 10px; border-bottom: 3px solid var(--primary); display: flex; flex-wrap: wrap; gap: 8px; }
+        #palette { position: sticky; top: 0; z-index: 1000; background: white; padding: 10px; border-bottom: 3px solid var(--primary); display: flex; flex-wrap: wrap; gap: 8px; align-items: center;}
         .chip { padding: 8px 15px; border-radius: 20px; border: 2px solid #ddd; cursor: pointer; background: white; font-size: 14px; user-select: none; }
         .chip.active { border-color: var(--primary); background: var(--primary); color: white; }
         .chip-closed { background: var(--closed); color: white; border-color: var(--closed); }
 
-        /* Responsive Table */
         .table-wrapper { width: 100%; overflow-x: auto; background: white; border-radius: 10px; }
         table { border-collapse: collapse; min-width: 1000px; width: 100%; }
         th, td { border: 1px solid #ddd; padding: 12px; text-align: center; user-select: none; touch-action: none; }
@@ -31,9 +29,12 @@
         .painted { background: #e3f2fd; font-weight: bold; color: var(--primary); }
         .painted-closed { background: var(--closed); color: white; }
 
-        /* Summary View */
-        .summary-item { border-left: 5px solid var(--primary); padding: 10px; margin-bottom: 10px; background: white; border-radius: 5px; }
-        .pos-tag { display: inline-block; padding: 2px 6px; background: #eee; border-radius: 4px; font-size: 0.8em; margin-right: 4px; }
+        /* Summary View Improvements */
+        .summary-item { border-left: 5px solid var(--primary); padding: 15px; margin-bottom: 15px; background: white; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
+        .timeline-row { display: flex; justify-content: space-between; padding: 4px 0; border-bottom: 1px dashed #eee; font-family: monospace; }
+        .time-label { color: #666; font-weight: bold; }
+        .pos-label { color: var(--primary); font-weight: bold; }
+        .break-label { color: var(--break); font-weight: bold; }
     </style>
 </head>
 <body>
@@ -52,10 +53,10 @@
             <input type="text" id="new-pos" placeholder="e.g. CFD1" style="flex:1; padding:8px;">
             <button onclick="addPos()" class="btn-primary">Add</button>
         </div>
-        <div id="pos-chips" style="display:flex; gap:5px; flex-wrap:wrap;"></div>
+        <div id="pos-chips" style="display:flex; gap:5px; flex-wrap:wrap; margin-bottom:20px;"></div>
 
         <h3>2. Input Workers</h3>
-        <textarea id="worker-names" placeholder="Enter names (one per line)" style="width:100%; height:80px; padding:10px;"></textarea>
+        <textarea id="worker-names" placeholder="Enter names (one per line)" style="width:100%; height:80px; padding:10px; border-radius:5px; border:1px solid #ccc;"></textarea>
         <button class="btn-primary" style="width:100%; margin-top:10px;" onclick="startBuilding()">3. Start Painting ➔</button>
     </div>
 </div>
@@ -76,7 +77,7 @@
     </div>
 
     <div id="summary-area" class="card">
-        <h3>Live Summary</h3>
+        <h3>Shift Summary (Consecutive Periods)</h3>
         <div id="summary-list"></div>
     </div>
 </div>
@@ -103,7 +104,7 @@
 
     function renderPos() {
         document.getElementById('pos-chips').innerHTML = positions.map((p, i) => 
-            `<span class="pos-tag">${p} <b onclick="positions.splice(${i},1);renderPos()" style="cursor:pointer;color:red">×</b></span>`).join('');
+            `<span style="background:#eee; padding:5px 10px; border-radius:15px; font-size:12px;">${p} <b onclick="positions.splice(${i},1);renderPos()" style="cursor:pointer;color:red">×</b></span>`).join('');
     }
 
     function startBuilding() {
@@ -113,11 +114,9 @@
         document.getElementById('setup-area').style.display = 'none';
         document.getElementById('editor-area').style.display = 'block';
         
-        // Render Palette
         document.getElementById('worker-palette').innerHTML = workers.map(w => 
             `<div class="chip" onclick="selectBrush('${w}')" id="brush-${w}">${w}</div>`).join('');
         
-        // Render Table
         document.getElementById('table-head').innerHTML = `<th>Time</th>` + positions.map(p => `<th>${p}</th>`).join('');
         document.getElementById('table-body').innerHTML = times.map(t => `
             <tr>
@@ -144,31 +143,65 @@
     }
 
     function updateSummary() {
-        let data = {};
-        workers.forEach(w => data[w] = { total: 0, intervals: [] });
+        let summaryHtml = '';
+        
+        workers.forEach(worker => {
+            let totalWork = 0;
+            let timeline = [];
 
-        document.querySelectorAll('td[data-pos]').forEach(td => {
-            let name = td.innerText;
-            if (data[name]) {
-                data[name].total += 15;
-                data[name].intervals.push({t: td.dataset.time, p: td.dataset.pos});
+            // Step 1: Create a flat map of what this worker is doing at every 15-min interval
+            times.forEach(t => {
+                let currentPos = "Break";
+                document.querySelectorAll(`td[data-time="${t}"]`).forEach(td => {
+                    if (td.innerText === worker) currentPos = td.dataset.pos;
+                });
+                timeline.push({ time: t, pos: currentPos });
+                if (currentPos !== "Break") totalWork += 15;
+            });
+
+            // Step 2: Merge consecutive identical positions
+            let merged = [];
+            if (timeline.length > 0) {
+                let start = timeline[0].time;
+                let currentPos = timeline[0].pos;
+
+                for (let i = 1; i <= timeline.length; i++) {
+                    let isEnd = (i === timeline.length);
+                    if (isEnd || timeline[i].pos !== currentPos) {
+                        let endTime = isEnd ? calculateEndTime(timeline[i-1].time) : timeline[i].time;
+                        merged.push({ start, end: endTime, pos: currentPos });
+                        if (!isEnd) {
+                            start = timeline[i].time;
+                            currentPos = timeline[i].pos;
+                        }
+                    }
+                }
             }
-        });
 
-        let html = '';
-        for (let name in data) {
-            let breakTime = (times.length * 15) - data[name].total;
-            html += `<div class="summary-item">
-                <strong>${name}</strong> | Total Work: ${data[name].total}m | Break: ${breakTime}m<br>
-                <small>${formatIntervals(data[name].intervals)}</small>
-            </div>`;
-        }
-        document.getElementById('summary-list').innerHTML = html;
+            // Step 3: Render worker card
+            let totalBreak = (times.length * 15) - totalWork;
+            summaryHtml += `
+                <div class="summary-item">
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; border-bottom: 2px solid #f0f0f0; padding-bottom:5px;">
+                        <span style="font-size:1.2em;"><strong>${worker}</strong></span>
+                        <span>Work: <b>${totalWork}m</b> | Break: <b>${totalBreak}m</b></span>
+                    </div>
+                    ${merged.map(m => `
+                        <div class="timeline-row">
+                            <span class="time-label">${m.start} - ${m.end}</span>
+                            <span class="${m.pos === 'Break' ? 'break-label' : 'pos-label'}">${m.pos}</span>
+                        </div>
+                    `).join('')}
+                </div>`;
+        });
+        document.getElementById('summary-list').innerHTML = summaryHtml;
     }
 
-    function formatIntervals(arr) {
-        if (arr.length === 0) return "No assignments";
-        return arr.map(i => `<span class="pos-tag">${i.t} [${i.p}]</span>`).join(' ');
+    function calculateEndTime(startTime) {
+        let [h, m] = startTime.split(':').map(Number);
+        m += 15;
+        if (m >= 60) { h++; m = 0; }
+        return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
     }
 </script>
 </body>
