@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>July's Garden: Pro Scheduler</title>
+    <title>July's Garden: Shift Master Pro</title>
     <style>
         :root { --primary: #4a90e2; --bg: #f4f7f6; --text: #333; --accent: #27ae60; --danger: #e74c3c; --closed: #34495e; --swap: #9b59b6; }
         body { font-family: -apple-system, sans-serif; background: var(--bg); color: var(--text); padding: 10px; margin: 0; }
@@ -18,25 +18,24 @@
         .btn-swap { background: var(--swap); color: white; }
         
         #palette { position: sticky; top: 0; z-index: 1000; background: white; padding: 10px; border-bottom: 3px solid var(--primary); display: flex; flex-wrap: wrap; gap: 8px; align-items: center;}
-        .chip { padding: 8px 15px; border-radius: 20px; border: 2px solid #ddd; cursor: pointer; background: white; font-size: 14px; user-select: none; }
-        .chip.active { border-color: var(--primary); background: var(--primary); color: white; }
-        .chip.swap-target { border-color: var(--swap); background: var(--swap); color: white; animation: pulse 1s infinite; }
+        .chip { padding: 8px 15px; border-radius: 20px; border: 2px solid #ddd; cursor: pointer; font-size: 14px; user-select: none; font-weight: bold; }
+        .chip.active { border-color: var(--primary); outline: 3px solid var(--primary); }
+        .chip.swap-target { border-color: var(--swap); animation: pulse 1s infinite; outline: 3px solid var(--swap); }
 
         @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }
 
-        .table-wrapper { width: 100%; overflow-x: auto; background: white; border-radius: 10px; max-height: 60vh; }
+        .table-wrapper { width: 100%; overflow-x: auto; background: white; border-radius: 10px; max-height: 60vh; border: 1px solid #ddd; }
         table { border-collapse: collapse; min-width: 1000px; width: 100%; }
         th, td { border: 1px solid #ddd; padding: 12px; text-align: center; user-select: none; touch-action: none; }
         th { background: #f8f9fa; position: sticky; top: 0; z-index: 10; }
         td:first-child { position: sticky; left: 0; background: #f8f9fa; font-weight: bold; z-index: 5; }
         
-        .painted { background: #e3f2fd; font-weight: bold; color: var(--primary); }
-        .painted-closed { background: var(--closed); color: white; }
+        .painted-closed { background: var(--closed) !important; color: white !important; }
 
-        .summary-item { border-left: 5px solid var(--primary); padding: 12px; margin-bottom: 10px; background: white; border-radius: 8px; font-size: 0.9em; }
-        .timeline-row { display: flex; justify-content: space-between; padding: 2px 0; border-bottom: 1px dashed #eee; }
-        .pos-label { color: var(--primary); font-weight: bold; }
-        .tag { background: #eee; padding: 2px 8px; border-radius: 10px; font-size: 11px; margin-right: 5px; display: inline-flex; align-items: center; gap: 5px;}
+        .summary-item { border-left: 8px solid var(--primary); padding: 12px; margin-bottom: 10px; background: white; border-radius: 8px; font-size: 0.9em; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+        .timeline-row { display: flex; justify-content: space-between; padding: 4px 0; border-bottom: 1px dashed #eee; }
+        .pos-label { font-weight: bold; color: var(--primary); }
+        .tag { background: #eee; padding: 4px 10px; border-radius: 12px; font-size: 12px; margin-right: 5px; display: inline-flex; align-items: center; gap: 5px;}
     </style>
 </head>
 <body>
@@ -45,14 +44,14 @@
     <h2 style="text-align:center;">Shift Master Pro 🌸</h2>
     
     <div class="card">
-        <h3>1. Setup & Data</h3>
+        <h3>1. System Configuration</h3>
         <div style="display:flex; gap:10px; margin-bottom:15px;">
-            <button onclick="document.getElementById('csv-file').click()" style="background:#555; color:white; flex:1;">📂 Import CSV</button>
+            <button onclick="document.getElementById('csv-file').click()" style="background:#555; color:white; flex:1;">📂 Import Full CSV</button>
             <input type="file" id="csv-file" style="display:none" accept=".csv" onchange="handleImport(this)">
-            <button onclick="clearAllData()" style="background:var(--danger); color:white; flex:1;">🗑️ Reset All</button>
+            <button onclick="clearAllData()" style="background:var(--danger); color:white; flex:1;">🗑️ Reset System</button>
         </div>
 
-        <h4>Positions</h4>
+        <h4>Manage Positions</h4>
         <div style="display:flex; gap:5px; margin-bottom:10px;">
             <input type="text" id="pos-input" placeholder="e.g. CFD1" style="flex:1; padding:8px; border:1px solid #ccc; border-radius:5px;">
             <button class="btn-primary" onclick="addPosition()">Add</button>
@@ -64,7 +63,7 @@
         <button onclick="addNewStaff()" class="btn-accent" style="width:100%;">+ Add Staff Member</button>
         
         <hr style="margin:20px 0;">
-        <h3>2. View Window</h3>
+        <h3>2. Launch View</h3>
         <div class="btn-group">
             <button class="btn-primary" onclick="setView('07:45', '15:00', 'Early View')">Early</button>
             <button class="btn-primary" onclick="setView('14:30', '22:00', 'Afternoon')">Afternoon</button>
@@ -76,9 +75,9 @@
 <div id="editor-area" style="display:none;">
     <div id="palette" class="no-print card">
         <div id="worker-palette" style="display:flex; gap:5px; flex-wrap:wrap;"></div>
-        <div class="chip" onclick="selectBrush('CLOSED')" style="background:var(--closed);color:white">CLOSED</div>
-        <div class="chip" onclick="selectBrush('UNMANNED')">Eraser</div>
-        <button id="swap-mode-btn" class="btn-swap" onclick="toggleSwapMode()" style="padding: 8px 12px; font-size: 12px;">Swap Mode: OFF</button>
+        <div class="chip" onclick="selectBrush('CLOSED', this)" style="background:var(--closed);color:white">CLOSED</div>
+        <div class="chip" onclick="selectBrush('UNMANNED', this)" style="background:#fff; color:#333;">Eraser</div>
+        <button id="swap-mode-btn" class="btn-swap" onclick="toggleSwapMode()" style="font-size: 12px;">Swap Mode: OFF</button>
         <div style="margin-left:auto; display:flex; gap:5px;">
             <button onclick="downloadCSV()" style="background:#555; color:white;">📥 CSV</button>
             <button onclick="window.print()" class="btn-accent">🖨️ Print</button>
@@ -93,9 +92,7 @@
     </div>
 
     <div id="summary-area" class="card">
-        <h3 id="summary-title">Shift Summary</h3>
-        <div id="summary-list"></div>
-    </div>
+        </div>
 </div>
 
 <script>
@@ -104,30 +101,40 @@
         "G1": ["09:45", "18:00"], "H1": ["10:45", "19:00"], "J1": ["11:45", "20:00"],
         "A1": ["14:30", "22:00"], "N1": ["21:45", "08:00"]
     };
-    
+
+    const workerColors = [
+        "#e3f2fd", "#f1f8e9", "#fff3e0", "#fce4ec", "#f3e5f5", "#e8eaf6", "#e0f2f1", "#f9fbe7", "#fffde7", "#efebe9",
+        "#d1c4e9", "#ffccbc", "#c8e6c9", "#b2ebf2", "#dcedc8", "#f0f4c3", "#d7ccc8", "#cfd8dc", "#ffecb3", "#b3e5fc"
+    ];
+
     let positions = ["EA", "SA", "WA", "TA", "DA"];
     let staffData = []; 
     let assignments = {}; 
     let currentViewTimes = [];
-    let activeBrush = null, isDragging = false;
-    let isSwapMode = false, swapPair = [];
+    let activeBrush = null, isStickyPainting = false, isSwapMode = false, swapPair = [], showStats = true;
 
-    // --- AUTO-SAVE ---
+    function getWorkerColor(name) {
+        let idx = staffData.findIndex(s => s.name === name);
+        return idx === -1 ? "#ffffff" : workerColors[idx % workerColors.length];
+    }
+
+    // --- SYSTEM DATA ---
     function autoSave() {
         const data = {
             positions,
             staff: Array.from(document.querySelectorAll('#staff-input-list > div')).map(row => ({
                 name: row.querySelector('.staff-name').value.trim(),
                 start: row.querySelector('.staff-start').value,
-                end: row.querySelector('.staff-end').value
+                end: row.querySelector('.staff-end').value,
+                shiftId: row.querySelector('.staff-shift').value
             })),
             assignments
         };
-        localStorage.setItem('julyGarden_ProData', JSON.stringify(data));
+        localStorage.setItem('julyGarden_FinalStore', JSON.stringify(data));
     }
 
     function loadSavedData() {
-        const saved = localStorage.getItem('julyGarden_ProData');
+        const saved = localStorage.getItem('julyGarden_FinalStore');
         if (!saved) return;
         const data = JSON.parse(saved);
         positions = data.positions || positions;
@@ -137,14 +144,11 @@
         data.staff.forEach(s => addNewStaff(s));
     }
 
-    function clearAllData() {
-        if(confirm("Wipe memory?")) { localStorage.removeItem('julyGarden_ProData'); location.reload(); }
-    }
+    function clearAllData() { if(confirm("Wipe everything?")) { localStorage.clear(); location.reload(); } }
 
-    // --- POSITIONS ---
     function addPosition() {
         let val = document.getElementById('pos-input').value.trim().toUpperCase();
-        if (val && !positions.includes(val)) { positions.push(val); renderPositions(); autoSave(); }
+        if (val && !positions.includes(val)) { positions.push(val); renderPositions(); autoSave(); document.getElementById('pos-input').value = ''; }
     }
 
     function renderPositions() {
@@ -152,16 +156,14 @@
             `<span class="tag">${p} <b onclick="positions.splice(${i},1);renderPositions();autoSave()" style="color:red;cursor:pointer;">×</b></span>`).join('');
     }
 
-    // --- STAFF ---
     function addNewStaff(saved = null) {
         const div = document.createElement('div');
         div.className = 'btn-group';
-        div.style.marginBottom = "8px";
         div.innerHTML = `
-            <input type="text" placeholder="Name" class="staff-name" value="${saved?.name || ''}" oninput="autoSave()" style="flex:1; min-width:80px;">
+            <input type="text" placeholder="Name" class="staff-name" value="${saved?.name || ''}" oninput="autoSave()" style="flex:1;">
             <select class="staff-shift" onchange="applyPreset(this);autoSave()">
                 <option value="">Shift</option>
-                ${Object.keys(shiftPresets).map(k => `<option value="${k}">${k}</option>`).join('')}
+                ${Object.keys(shiftPresets).map(k => `<option value="${k}" ${saved?.shiftId === k ? 'selected' : ''}>${k}</option>`).join('')}
             </select>
             <input type="time" class="staff-start" value="${saved?.start || ''}" oninput="autoSave()"> - 
             <input type="time" class="staff-end" value="${saved?.end || ''}" oninput="autoSave()">
@@ -178,56 +180,69 @@
         row.querySelector('.staff-end').value = e;
     }
 
-    // --- SWAP LOGIC ---
-    function toggleSwapMode() {
-        isSwapMode = !isSwapMode;
-        swapPair = [];
-        document.getElementById('swap-mode-btn').innerText = isSwapMode ? "Swap Mode: ON (Select 2)" : "Swap Mode: OFF";
-        document.querySelectorAll('.chip').forEach(c => c.classList.remove('active', 'swap-target'));
-        activeBrush = null;
+    // --- CSV ENGINE ---
+    function downloadCSV() {
+        let csv = "DATA_TYPE,Time," + positions.join(",") + "\n";
+        currentViewTimes.forEach(t => {
+            let row = ["GRID", t];
+            positions.forEach(p => row.push(assignments[`${t}-${p}`] || "-"));
+            csv += row.join(",") + "\n";
+        });
+        csv += "META_POSITIONS," + positions.join(",") + "\n";
+        staffData.forEach(s => csv += `META_STAFF,${s.name},${s.start},${s.end},${s.shiftId || ''}\n`);
+        const blob = new Blob([csv], { type: 'text/csv' });
+        const a = document.createElement('a');
+        a.href = window.URL.createObjectURL(blob); a.download = 'july_garden_roster.csv'; a.click();
     }
 
-    function executeSwap() {
-        const [w1, w2] = swapPair;
-        Object.keys(assignments).forEach(key => {
-            if (assignments[key] === w1) assignments[key] = "TEMP_SWAP";
-        });
-        Object.keys(assignments).forEach(key => {
-            if (assignments[key] === w2) assignments[key] = w1;
-            if (assignments[key] === "TEMP_SWAP") assignments[key] = w2;
-        });
-        autoSave();
-        renderEditor();
-        updateSummary();
-        toggleSwapMode(); // Reset after swap
+    function handleImport(input) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            const lines = e.target.result.split('\n');
+            let newStaff = [], newPos = [], newAssign = {}, gridHeaders = [];
+            lines.forEach(line => {
+                const c = line.split(',').map(x => x.trim());
+                if (c[0] === "DATA_TYPE") gridHeaders = c.slice(2);
+                else if (c[0] === "GRID") {
+                    gridHeaders.forEach((h, i) => { if(c[i+2] !== "-") newAssign[`${c[1]}-${h}`] = c[i+2]; });
+                }
+                else if (c[0] === "META_POSITIONS") newPos = c.slice(1).filter(x => x !== "");
+                else if (c[0] === "META_STAFF") newStaff.push({name:c[1], start:c[2], end:c[3], shiftId:c[4]});
+            });
+            if (newPos.length) positions = newPos;
+            if (newStaff.length) { document.getElementById('staff-input-list').innerHTML = ''; newStaff.forEach(s => addNewStaff(s)); }
+            assignments = newAssign; renderPositions(); autoSave(); alert("Imported!");
+        };
+        reader.readAsText(input.files[0]);
     }
 
-    // --- CORE ---
-    function setView(viewStart, viewEnd, title) {
+    // --- EDITOR ---
+    function setView(sTime, eTime, title) {
         staffData = Array.from(document.querySelectorAll('#staff-input-list > div')).map(row => ({
             name: row.querySelector('.staff-name').value.trim(),
             start: row.querySelector('.staff-start').value,
-            end: row.querySelector('.staff-end').value
+            end: row.querySelector('.staff-end').value,
+            shiftId: row.querySelector('.staff-shift').value
         })).filter(s => s.name);
-        document.getElementById('summary-title').innerText = `${title} Summary`;
+
         document.getElementById('editor-area').style.display = 'block';
         currentViewTimes = [];
-        let curr = new Date(`2026-01-01T${viewStart}:00`), stop = new Date(`2026-01-01T${viewEnd}:00`);
+        let curr = new Date(`2026-01-01T${sTime}:00`), stop = new Date(`2026-01-01T${eTime}:00`);
         if (stop <= curr) stop.setDate(stop.getDate() + 1);
         while (curr < stop) { currentViewTimes.push(curr.toTimeString().substring(0, 5)); curr.setMinutes(curr.getMinutes() + 15); }
-        renderEditor();
-        updateSummary();
+        renderEditor(); updateSummary();
     }
 
     function renderEditor() {
         document.getElementById('worker-palette').innerHTML = staffData.map(s => 
-            `<div class="chip" onclick="selectBrush('${s.name}', this)" id="brush-${s.name}">${s.name}</div>`).join('');
+            `<div class="chip" onclick="selectBrush('${s.name}', this)" id="brush-${s.name}" style="background:${getWorkerColor(s.name)}">${s.name}</div>`).join('');
         document.getElementById('table-head').innerHTML = `<th>Time</th>` + positions.map(p => `<th>${p}</th>`).join('');
         document.getElementById('table-body').innerHTML = currentViewTimes.map(t => {
             return `<tr><td>${t}</td>${positions.map(p => {
-                let val = assignments[`${t}-${p}`] || "-";
-                let cls = val === "CLOSED" ? "painted-closed" : (val !== "-" ? "painted" : "");
-                return `<td onpointerdown="startPaint(this)" onpointerenter="continuePaint(this)" data-time="${t}" data-pos="${p}" class="${cls}">${val}</td>`;
+                let v = assignments[`${t}-${p}`] || "-";
+                let color = v === "CLOSED" ? "var(--closed)" : (v !== "-" ? getWorkerColor(v) : "");
+                let cls = v === "CLOSED" ? "painted-closed" : (v !== "-" ? "painted" : "");
+                return `<td onclick="toggleStickyPaint(this)" onpointerenter="hoverPaint(this)" data-time="${t}" data-pos="${p}" class="${cls}" style="background:${color}">${v}</td>`;
             }).join('')}</tr>`;
         }).join('');
     }
@@ -235,197 +250,92 @@
     function selectBrush(name, el) {
         if (isSwapMode) {
             if (swapPair.includes(name)) return;
-            swapPair.push(name);
-            el.classList.add('swap-target');
-            if (swapPair.length === 2) executeSwap();
+            swapPair.push(name); el.classList.add('swap-target');
+            if (swapPair.length === 2) { executeSwap(); }
             return;
         }
         activeBrush = name;
         document.querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
-        if(name !== 'UNMANNED' && name !== 'CLOSED') el.classList.add('active');
+        el.classList.add('active');
     }
 
-    // --- Updated Logic for Toggle-Painting ---
-
-let isStickyPainting = false; // New state tracker
-
-function startPaint(el) {
-    if (!activeBrush || isSwapMode) return;
-
-    // Toggle logic: If already painting, stop. If not, start.
-    if (isStickyPainting) {
-        isStickyPainting = false;
-        document.body.style.cursor = "default";
-        // Remove active visual from all cells
-        updateSummary();
-        autoSave();
-    } else {
-        isStickyPainting = true;
-        document.body.style.cursor = "crosshair";
-        paint(el); // Paint the initial cell
-    }
-}
-
-function continuePaint(el) {
-    // Only paint if the "Sticky" toggle is ON
-    if (isStickyPainting && activeBrush && !isSwapMode) {
-        paint(el);
-    }
-}
-
-// Update the table rendering to use these improved listeners
-function renderEditor() {
-    const paletteHtml = staffData.map(s => 
-        `<div class="chip" onclick="selectBrush('${s.name}', this)" id="brush-${s.name}">${s.name}</div>`).join('');
-    document.getElementById('worker-palette').innerHTML = paletteHtml;
-
-    document.getElementById('table-head').innerHTML = `<th>Time</th>` + positions.map(p => `<th>${p}</th>`).join('');
-    
-    document.getElementById('table-body').innerHTML = currentViewTimes.map(t => {
-        return `<tr>
-            <td>${t}</td>
-            ${positions.map(p => {
-                let val = assignments[`${t}-${p}`] || "-";
-                let cls = val === "CLOSED" ? "painted-closed" : (val !== "-" ? "painted" : "");
-                // Changed to click-based triggers for better mobile control
-                return `<td onclick="startPaint(this)" 
-                            onpointerenter="continuePaint(this)" 
-                            data-time="${t}" data-pos="${p}" 
-                            class="${cls}">${val}</td>`;
-            }).join('')}
-        </tr>`;
-    }).join('');
-}
-
-function paint(el) {
-    let t = el.dataset.time, p = el.dataset.pos;
-    
-    // Eraser
-    if (activeBrush === 'UNMANNED') {
-        assignments[`${t}-${p}`] = "-";
-        el.innerText = "-";
-        el.className = "";
-        return;
-    }
-    
-    // Closed
-    if (activeBrush === 'CLOSED') {
-        assignments[`${t}-${p}`] = "CLOSED";
-        el.innerText = "CLOSED";
-        el.className = "painted-closed";
-        return;
+    function toggleStickyPaint(el) {
+        if(!activeBrush || isSwapMode) return;
+        isStickyPainting = !isStickyPainting;
+        document.body.style.cursor = isStickyPainting ? "crosshair" : "default";
+        if(isStickyPainting) paint(el);
+        else { autoSave(); updateSummary(); }
     }
 
-    // Worker Assignment
-    let worker = staffData.find(s => s.name === activeBrush);
-    if (!isTimeInRange(t, worker.start, worker.end)) return;
+    function hoverPaint(el) { if(isStickyPainting) paint(el); }
 
-    // Conflict Check
-    let conflict = positions.find(pos => pos !== p && assignments[`${t}-${pos}`] === activeBrush);
-    if (conflict) {
-        // If we hit a conflict, we force stop the sticky paint to show the alert
-        alert(`CONFLICT: ${activeBrush} is already at ${conflict} at ${t}!`);
-        isStickyPainting = false;
-        document.body.style.cursor = "default";
-        return;
+    function paint(el) {
+        let t = el.dataset.time, p = el.dataset.pos;
+        if (activeBrush === 'UNMANNED') { assignments[`${t}-${p}`] = "-"; el.innerText = "-"; el.style.background = ""; return; }
+        if (activeBrush === 'CLOSED') { assignments[`${t}-${p}`] = "CLOSED"; el.innerText = "CLOSED"; el.style.background = "var(--closed)"; return; }
+        let w = staffData.find(s => s.name === activeBrush);
+        if(!isTimeInRange(t, w.start, w.end)) return;
+        let conflict = positions.find(pos => pos !== p && assignments[`${t}-${pos}`] === activeBrush);
+        if (conflict) { alert(`CONFLICT: ${activeBrush} is at ${conflict}!`); isStickyPainting = false; return; }
+        assignments[`${t}-${p}`] = activeBrush; el.innerText = activeBrush; el.style.background = getWorkerColor(activeBrush);
     }
 
-    assignments[`${t}-${p}`] = activeBrush;
-    el.innerText = activeBrush;
-    el.className = "painted";
-}
-
-    function isTimeInRange(target, start, end) {
-        if (!start || !end) return false;
-        if (start < end) return target >= start && target < end;
-        return target >= start || target < end;
+    function isTimeInRange(target, s, e) {
+        if (!s || !e) return false;
+        return s < e ? (target >= s && target < e) : (target >= s || target < e);
     }
 
-    // --- Global State for Privacy ---
-let showStats = true;
+    function toggleSwapMode() {
+        isSwapMode = !isSwapMode; swapPair = [];
+        document.getElementById('swap-mode-btn').innerText = isSwapMode ? "Swap Mode: ON" : "Swap Mode: OFF";
+        document.querySelectorAll('.chip').forEach(c => c.classList.remove('active', 'swap-target'));
+    }
 
-function toggleStats() {
-    showStats = !showStats;
-    const btn = document.getElementById('toggle-stats-btn');
-    btn.innerText = showStats ? "👁️ Hide Stats" : "🙈 Show Stats";
-    btn.style.background = showStats ? "var(--primary)" : "#555";
-    updateSummary();
-}
-
-// --- Updated Summary with Work/Break Logic ---
-function updateSummary() {
-    let html = '';
-    
-    // Header for the Summary Area with the new Toggle
-    const summaryHeader = `
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;" class="no-print">
-            <h3 style="margin:0;">Shift Summary</h3>
-            <button id="toggle-stats-btn" class="btn-primary" onclick="toggleStats()" style="padding:5px 10px; font-size:12px;">
-                ${showStats ? "👁️ Hide Stats" : "🙈 Show Stats"}
-            </button>
-        </div>
-    `;
-
-    staffData.forEach(worker => {
-        let workMin = 0;
-        let timeline = [];
-        
-        // 1. Calculate the 'Duty Window' for this worker within the CURRENT VIEW
-        currentViewTimes.forEach(t => {
-            if (!isTimeInRange(t, worker.start, worker.end)) return;
-            
-            let hits = positions.filter(p => assignments[`${t}-${p}`] === worker.name);
-            let curP = hits.length > 0 ? hits[0] : "Break";
-            
-            timeline.push({ time: t, pos: curP });
-            if (curP !== "Break") workMin += 15;
+    function executeSwap() {
+        const [w1, w2] = swapPair;
+        Object.keys(assignments).forEach(k => {
+            if (assignments[k] === w1) assignments[k] = "TEMP";
         });
+        Object.keys(assignments).forEach(k => {
+            if (assignments[k] === w2) assignments[k] = w1;
+            if (assignments[k] === "TEMP") assignments[k] = w2;
+        });
+        autoSave(); renderEditor(); updateSummary(); toggleSwapMode();
+    }
 
-        if (timeline.length === 0) return; // Skip workers not in this view
-
-        // 2. Calculate Total Break Time for this window
-        let totalDutyMin = timeline.length * 15;
-        let breakMin = totalDutyMin - workMin;
-
-        // 3. Merge identical consecutive positions for the timeline display
-        let merged = [];
-        let s = timeline[0].time, curP = timeline[0].pos;
-        for (let i = 1; i <= timeline.length; i++) {
-            if (i === timeline.length || timeline[i].pos !== curP) {
-                merged.push({ 
-                    s, 
-                    e: (i === timeline.length ? getEnd(timeline[i - 1].time) : timeline[i].time), 
-                    p: curP 
-                });
-                if (i < timeline.length) { s = timeline[i].time; curP = timeline[i].pos; }
+    function updateSummary() {
+        let html = '';
+        staffData.forEach(worker => {
+            let workMin = 0, timeline = [];
+            currentViewTimes.forEach(t => {
+                if(!isTimeInRange(t, worker.start, worker.end)) return;
+                let hits = positions.filter(p => assignments[`${t}-${p}`] === worker.name);
+                let curP = hits.length > 0 ? hits[0] : "Break";
+                timeline.push({ time: t, pos: curP });
+                if(curP !== "Break") workMin += 15;
+            });
+            if(!timeline.length) return;
+            let totalDuty = timeline.length * 15, breakMin = totalDuty - workMin, merged = [];
+            let s = timeline[0].time, curP = timeline[0].pos;
+            for(let i=1; i<=timeline.length; i++){
+                if(i===timeline.length || timeline[i].pos !== curP) {
+                    merged.push({s, e: (i===timeline.length ? getEnd(timeline[i-1].time) : timeline[i].time), p: curP});
+                    if(i<timeline.length){ s = timeline[i].time; curP = timeline[i].pos; }
+                }
             }
-        }
-
-        // 4. Build the Card HTML
-        const statsHtml = showStats ? `
-            <div style="font-size: 0.85em; color: #666; margin-bottom: 5px;">
-                <b>Work:</b> ${Math.floor(workMin/60)}h ${workMin%60}m | 
-                <b>Break:</b> ${Math.floor(breakMin/60)}h ${breakMin%60}m
-            </div>` : '';
-
-        html += `
-            <div class="summary-item">
-                <div style="display:flex; justify-content:space-between;">
-                    <strong>${worker.name}</strong>
-                    <small class="no-print">${worker.start} - ${worker.end}</small>
-                </div>
-                ${statsHtml}
-                <hr style="border:0; border-top:1px solid #eee; margin:8px 0;">
-                ${merged.map(m => `
-                    <div class="timeline-row">
-                        <span>${m.s} - ${m.e}</span>
-                        <span class="pos-label" style="${m.p === 'Break' ? 'color:#e67e22' : ''}">${m.p}</span>
-                    </div>`).join('')}
+            html += `<div class="summary-item">
+                <div style="display:flex; justify-content:space-between;"><strong>${worker.name}</strong></div>
+                ${showStats ? `<div style="font-size:0.8em; color:#666;">Work: ${workMin}m | Break: ${breakMin}m</div>` : ''}
+                <hr style="border:0; border-top:1px solid #eee; margin:5px 0;">
+                ${merged.map(m => `<div class="timeline-row"><span>${m.s}-${m.e}</span><span class="pos-label">${m.p}</span></div>`).join('')}
             </div>`;
-    });
-
-    document.getElementById('summary-area').innerHTML = summaryHeader + `<div id="summary-list">${html || "No staff assigned."}</div>`;
-}
+        });
+        document.getElementById('summary-area').innerHTML = `
+            <div style="display:flex; justify-content:space-between; align-items:center;" class="no-print">
+                <h3>Summary</h3>
+                <button onclick="showStats=!showStats;updateSummary()" class="btn-primary">${showStats ? 'Hide Stats' : 'Show Stats'}</button>
+            </div><div id="summary-list">${html}</div>`;
+    }
 
     function getEnd(t) {
         let [h, m] = t.split(':').map(Number);
@@ -433,88 +343,8 @@ function updateSummary() {
         return `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}`;
     }
 
-    // --- Updated Download CSV (Includes Metadata) ---
-function downloadCSV() {
-    // 1. Header & Grid Data
-    let csv = "DATA_TYPE,Time," + positions.join(",") + "\n";
-    currentViewTimes.forEach(t => {
-        let row = ["GRID", t];
-        positions.forEach(p => row.push(assignments[`${t}-${p}`] || "-"));
-        csv += row.join(",") + "\n";
-    });
-
-    // 2. Metadata: Positions
-    csv += "META_POSITIONS," + positions.join(",") + "\n";
-
-    // 3. Metadata: Staff Registry (Name, Start, End)
-    staffData.forEach(s => {
-        csv += `META_STAFF,${s.name},${s.start},${s.end}\n`;
-    });
-
-    const blob = new Blob([csv], { type: 'text/csv' });
-    const url = window.URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `roster_backup_${new Date().toISOString().slice(0,10)}.csv`;
-    a.click();
-}
-
-// --- Updated Import CSV (Reads Metadata) ---
-function handleImport(input) {
-    if (!input.files[0]) return;
-    const reader = new FileReader();
-    reader.onload = function(e) {
-        const lines = e.target.result.split('\n');
-        
-        // Temporary storage to avoid wiping data if file is corrupted
-        let newPositions = [];
-        let newStaff = [];
-        let newAssignments = {};
-        let gridHeaders = [];
-
-        lines.forEach(line => {
-            const cells = line.split(',').map(c => c.trim());
-            if (cells.length < 2) return;
-
-            const type = cells[0];
-
-            if (type === "DATA_TYPE") {
-                // Determine grid layout (Time, Pos1, Pos2...)
-                gridHeaders = cells.slice(2); 
-            } else if (type === "GRID") {
-                const time = cells[1];
-                cells.slice(2).forEach((worker, idx) => {
-                    if (worker !== "-") {
-                        newAssignments[`${time}-${gridHeaders[idx]}`] = worker;
-                    }
-                });
-            } else if (type === "META_POSITIONS") {
-                newPositions = cells.slice(1).filter(p => p !== "");
-            } else if (type === "META_STAFF") {
-                newStaff.push({ name: cells[1], start: cells[2], end: cells[3] });
-            }
-        });
-
-        // Apply imported data
-        if (newPositions.length > 0) positions = newPositions;
-        if (newStaff.length > 0) {
-            document.getElementById('staff-input-list').innerHTML = '';
-            newStaff.forEach(s => addNewStaff(s));
-        }
-        assignments = newAssignments;
-
-        renderPositions();
-        autoSave();
-        alert("Full System Import Successful! Positions, Staff, and Roster are now updated.");
-        
-        // Refresh the current view if one was active
-        if (currentViewTimes.length > 0) renderEditor();
-    };
-    reader.readAsText(input.files[0]);
-}
-
     loadSavedData();
-    if(document.getElementById('staff-input-list').children.length === 0) addNewStaff();
+    if(!document.getElementById('staff-input-list').children.length) addNewStaff();
 </script>
 </body>
 </html>
