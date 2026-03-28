@@ -269,16 +269,52 @@
 
     function hoverPaint(el) { if(isStickyPainting) paint(el); }
 
-    function paint(el) {
-        let t = el.dataset.time, p = el.dataset.pos;
-        if (activeBrush === 'UNMANNED') { assignments[`${t}-${p}`] = "-"; el.innerText = "-"; el.style.background = ""; return; }
-        if (activeBrush === 'CLOSED') { assignments[`${t}-${p}`] = "CLOSED"; el.innerText = "CLOSED"; el.style.background = "var(--closed)"; return; }
-        let w = staffData.find(s => s.name === activeBrush);
-        if(!isTimeInRange(t, w.start, w.end)) return;
-        let conflict = positions.find(pos => pos !== p && assignments[`${t}-${pos}`] === activeBrush);
-        if (conflict) { alert(`CONFLICT: ${activeBrush} is at ${conflict}!`); isStickyPainting = false; return; }
-        assignments[`${t}-${p}`] = activeBrush; el.innerText = activeBrush; el.style.background = getWorkerColor(activeBrush);
+    // --- Updated CSS (Remove !important to allow overrides) ---
+/* .painted-closed { background: var(--closed); color: white; } */
+
+// --- Updated Paint Function (The logic fix) ---
+function paint(el) {
+    let t = el.dataset.time, p = el.dataset.pos;
+
+    // Reset cell state before applying new brush
+    el.classList.remove('painted-closed');
+    el.style.color = "var(--text)";
+    el.style.fontWeight = "normal";
+
+    // 1. Eraser / Clear
+    if (activeBrush === 'UNMANNED') {
+        assignments[t + '-' + p] = "-";
+        el.innerText = "-";
+        el.style.background = ""; 
+        return;
     }
+    
+    // 2. Closed Position
+    if (activeBrush === 'CLOSED') {
+        assignments[t + '-' + p] = "CLOSED";
+        el.innerText = "CLOSED";
+        el.style.background = "var(--closed)";
+        el.style.color = "white";
+        el.classList.add('painted-closed');
+        return;
+    }
+
+    // 3. Worker Assignment
+    let w = staffData.find(s => s.name === activeBrush);
+    if(!isTimeInRange(t, w.start, w.end)) return;
+
+    let conflict = positions.find(pos => pos !== p && assignments[t + '-' + pos] === activeBrush);
+    if (conflict) { 
+        alert("CONFLICT: " + activeBrush + " is already at " + conflict + "!"); 
+        isStickyPainting = false; 
+        return; 
+    }
+
+    assignments[t + '-' + p] = activeBrush; 
+    el.innerText = activeBrush; 
+    el.style.background = getWorkerColor(activeBrush);
+    el.style.fontWeight = "bold";
+}
 
     function isTimeInRange(target, s, e) {
         if (!s || !e) return false;
