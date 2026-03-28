@@ -7,8 +7,31 @@
     <style>
         :root { --primary: #4a90e2; --bg: #f4f7f6; --text: #333; --accent: #27ae60; --danger: #e74c3c; --closed: #34495e; --swap: #9b59b6; }
         body { font-family: -apple-system, sans-serif; background: var(--bg); color: var(--text); padding: 10px; margin: 0; }
-        
-        @media print {
+
+    tr:hover td {
+        background-color: rgba(74, 144, 226, 0.08) !important; /* Very light blue tint */
+    }
+    /* Keep the first column (Time) distinct during hover */
+    tr:hover td:first-child {
+        background-color: #e3f2fd !important;
+        color: var(--primary);
+    }
+
+    /* --- Summary Grid Gallery --- */
+    #summary-list {
+        display: flex;
+        flex-wrap: wrap; /* Allows cards to wrap to the next line */
+        gap: 15px;
+        justify-content: flex-start;
+    }
+
+    .summary-item {
+        flex: 1 1 300px; /* Grow to fill space, shrink if needed, base width 300px */
+        max-width: 400px; /* Prevents cards from getting too wide on huge screens */
+        border-left: 8px solid var(--primary);
+        /* Existing styles... */
+    }
+    @media print {
     /* Hide everything that isn't the timetable or summary */
     .no-print, #palette, .btn-group, button, hr { 
         display: none !important; 
@@ -46,6 +69,19 @@
         border: none !important;
         padding: 0 !important;
         margin: 0 !important;
+    }
+
+    #summary-list {
+        display: flex;
+        flex-wrap: wrap;
+        flex-direction: row; /* Force cards to align side-by-side on paper */
+    }
+    .summary-item {
+        flex: 1 1 200px; /* Slightly smaller on paper to fit 2-3 per row */
+        break-inside: avoid; /* Prevents a card from being split across two pages */
+        margin-bottom: 10px;
+        border: 1px solid #eee;
+        border-left: 5px solid var(--primary);
     }
 }
 
