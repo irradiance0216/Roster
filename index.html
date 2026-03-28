@@ -245,21 +245,95 @@
         if(name !== 'UNMANNED' && name !== 'CLOSED') el.classList.add('active');
     }
 
-    function startPaint(el) { isDragging = true; paint(el); }
-    function continuePaint(el) { if(isDragging) paint(el); }
+    // --- Updated Logic for Toggle-Painting ---
 
-    function paint(el) {
-        if(!activeBrush || isSwapMode) return;
-        let t = el.dataset.time, p = el.dataset.pos;
-        if (activeBrush === 'UNMANNED') { assignments[`${t}-${p}`] = "-"; el.innerText = "-"; el.className = ""; updateSummary(); return; }
-        if (activeBrush === 'CLOSED') { assignments[`${t}-${p}`] = "CLOSED"; el.innerText = "CLOSED"; el.className = "painted-closed"; updateSummary(); return; }
-        let worker = staffData.find(s => s.name === activeBrush);
-        if(!isTimeInRange(t, worker.start, worker.end)) return;
-        let conflict = positions.find(pos => pos !== p && assignments[`${t}-${pos}`] === activeBrush);
-        if (conflict) { alert(`CONFLICT: ${activeBrush} at ${conflict}!`); isDragging = false; return; }
-        assignments[`${t}-${p}`] = activeBrush; el.innerText = activeBrush; el.className = "painted";
+let isStickyPainting = false; // New state tracker
+
+function startPaint(el) {
+    if (!activeBrush || isSwapMode) return;
+
+    // Toggle logic: If already painting, stop. If not, start.
+    if (isStickyPainting) {
+        isStickyPainting = false;
+        document.body.style.cursor = "default";
+        // Remove active visual from all cells
         updateSummary();
+        autoSave();
+    } else {
+        isStickyPainting = true;
+        document.body.style.cursor = "crosshair";
+        paint(el); // Paint the initial cell
     }
+}
+
+function continuePaint(el) {
+    // Only paint if the "Sticky" toggle is ON
+    if (isStickyPainting && activeBrush && !isSwapMode) {
+        paint(el);
+    }
+}
+
+// Update the table rendering to use these improved listeners
+function renderEditor() {
+    const paletteHtml = staffData.map(s => 
+        `<div class="chip" onclick="selectBrush('${s.name}', this)" id="brush-${s.name}">${s.name}</div>`).join('');
+    document.getElementById('worker-palette').innerHTML = paletteHtml;
+
+    document.getElementById('table-head').innerHTML = `<th>Time</th>` + positions.map(p => `<th>${p}</th>`).join('');
+    
+    document.getElementById('table-body').innerHTML = currentViewTimes.map(t => {
+        return `<tr>
+            <td>${t}</td>
+            ${positions.map(p => {
+                let val = assignments[`${t}-${p}`] || "-";
+                let cls = val === "CLOSED" ? "painted-closed" : (val !== "-" ? "painted" : "");
+                // Changed to click-based triggers for better mobile control
+                return `<td onclick="startPaint(this)" 
+                            onpointerenter="continuePaint(this)" 
+                            data-time="${t}" data-pos="${p}" 
+                            class="${cls}">${val}</td>`;
+            }).join('')}
+        </tr>`;
+    }).join('');
+}
+
+function paint(el) {
+    let t = el.dataset.time, p = el.dataset.pos;
+    
+    // Eraser
+    if (activeBrush === 'UNMANNED') {
+        assignments[`${t}-${p}`] = "-";
+        el.innerText = "-";
+        el.className = "";
+        return;
+    }
+    
+    // Closed
+    if (activeBrush === 'CLOSED') {
+        assignments[`${t}-${p}`] = "CLOSED";
+        el.innerText = "CLOSED";
+        el.className = "painted-closed";
+        return;
+    }
+
+    // Worker Assignment
+    let worker = staffData.find(s => s.name === activeBrush);
+    if (!isTimeInRange(t, worker.start, worker.end)) return;
+
+    // Conflict Check
+    let conflict = positions.find(pos => pos !== p && assignments[`${t}-${pos}`] === activeBrush);
+    if (conflict) {
+        // If we hit a conflict, we force stop the sticky paint to show the alert
+        alert(`CONFLICT: ${activeBrush} is already at ${conflict} at ${t}!`);
+        isStickyPainting = false;
+        document.body.style.cursor = "default";
+        return;
+    }
+
+    assignments[`${t}-${p}`] = activeBrush;
+    el.innerText = activeBrush;
+    el.className = "painted";
+}
 
     function isTimeInRange(target, start, end) {
         if (!start || !end) return false;
