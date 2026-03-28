@@ -374,40 +374,85 @@ function paint(el) {
         return `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}`;
     }
 
-    function downloadCSV() {
-        let csv = "Time," + positions.join(",") + "\n";
-        currentViewTimes.forEach(t => {
-            let row = [t];
-            positions.forEach(p => row.push(assignments[`${t}-${p}`] || "-"));
-            csv += row.join(",") + "\n";
-        });
-        const blob = new Blob([csv], { type: 'text/csv' });
-        const a = document.createElement('a');
-        a.href = window.URL.createObjectURL(blob); a.download = 'roster.csv'; a.click();
-    }
+    // --- Updated Download CSV (Includes Metadata) ---
+function downloadCSV() {
+    // 1. Header & Grid Data
+    let csv = "DATA_TYPE,Time," + positions.join(",") + "\n";
+    currentViewTimes.forEach(t => {
+        let row = ["GRID", t];
+        positions.forEach(p => row.push(assignments[`${t}-${p}`] || "-"));
+        csv += row.join(",") + "\n";
+    });
 
-    function handleImport(input) {
-        const reader = new FileReader();
-        reader.onload = function(e) {
-            const lines = e.target.result.split('\n');
-            const headers = lines[0].split(',');
-            for(let i=1; i<headers.length; i++) {
-                let p = headers[i].trim(); if(p && !positions.includes(p)) positions.push(p);
+    // 2. Metadata: Positions
+    csv += "META_POSITIONS," + positions.join(",") + "\n";
+
+    // 3. Metadata: Staff Registry (Name, Start, End)
+    staffData.forEach(s => {
+        csv += `META_STAFF,${s.name},${s.start},${s.end}\n`;
+    });
+
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `roster_backup_${new Date().toISOString().slice(0,10)}.csv`;
+    a.click();
+}
+
+// --- Updated Import CSV (Reads Metadata) ---
+function handleImport(input) {
+    if (!input.files[0]) return;
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        const lines = e.target.result.split('\n');
+        
+        // Temporary storage to avoid wiping data if file is corrupted
+        let newPositions = [];
+        let newStaff = [];
+        let newAssignments = {};
+        let gridHeaders = [];
+
+        lines.forEach(line => {
+            const cells = line.split(',').map(c => c.trim());
+            if (cells.length < 2) return;
+
+            const type = cells[0];
+
+            if (type === "DATA_TYPE") {
+                // Determine grid layout (Time, Pos1, Pos2...)
+                gridHeaders = cells.slice(2); 
+            } else if (type === "GRID") {
+                const time = cells[1];
+                cells.slice(2).forEach((worker, idx) => {
+                    if (worker !== "-") {
+                        newAssignments[`${time}-${gridHeaders[idx]}`] = worker;
+                    }
+                });
+            } else if (type === "META_POSITIONS") {
+                newPositions = cells.slice(1).filter(p => p !== "");
+            } else if (type === "META_STAFF") {
+                newStaff.push({ name: cells[1], start: cells[2], end: cells[3] });
             }
-            renderPositions();
-            for(let i=1; i<lines.length; i++) {
-                const cells = lines[i].split(','); if(cells.length < 2) continue;
-                const time = cells[0].trim();
-                for(let j=1; j<cells.length; j++) {
-                    const worker = cells[j].trim();
-                    const pos = headers[j].trim();
-                    if(worker !== "-") assignments[`${time}-${pos}`] = worker;
-                }
-            }
-            autoSave(); alert("Imported!");
-        };
-        reader.readAsText(input.files[0]);
-    }
+        });
+
+        // Apply imported data
+        if (newPositions.length > 0) positions = newPositions;
+        if (newStaff.length > 0) {
+            document.getElementById('staff-input-list').innerHTML = '';
+            newStaff.forEach(s => addNewStaff(s));
+        }
+        assignments = newAssignments;
+
+        renderPositions();
+        autoSave();
+        alert("Full System Import Successful! Positions, Staff, and Roster are now updated.");
+        
+        // Refresh the current view if one was active
+        if (currentViewTimes.length > 0) renderEditor();
+    };
+    reader.readAsText(input.files[0]);
+}
 
     loadSavedData();
     if(document.getElementById('staff-input-list').children.length === 0) addNewStaff();
