@@ -341,32 +341,91 @@ function paint(el) {
         return target >= start || target < end;
     }
 
-    function updateSummary() {
-        let html = '';
-        staffData.forEach(worker => {
-            let workMin = 0, timeline = [];
-            currentViewTimes.forEach(t => {
-                if(!isTimeInRange(t, worker.start, worker.end)) return;
-                let hits = positions.filter(p => assignments[`${t}-${p}`] === worker.name);
-                let curP = hits.length > 0 ? hits[0] : "Break";
-                timeline.push({ time: t, pos: curP });
-                if(curP !== "Break") workMin += 15;
-            });
-            let merged = [];
-            if(timeline.length > 0) {
-                let s = timeline[0].time, curP = timeline[0].pos;
-                for(let i=1; i<=timeline.length; i++){
-                    if(i===timeline.length || timeline[i].pos !== curP) {
-                        merged.push({s, e: (i===timeline.length ? getEnd(timeline[i-1].time) : timeline[i].time), p: curP});
-                        if(i<timeline.length){ s = timeline[i].time; curP = timeline[i].pos; }
-                    }
-                }
-                html += `<div class="summary-item"><strong>${worker.name}</strong> | Work: ${workMin}m<br>
-                ${merged.map(m => `<div class="timeline-row"><span>${m.s}-${m.e}</span><span class="pos-label">${m.p}</span></div>`).join('')}</div>`;
-            }
+    // --- Global State for Privacy ---
+let showStats = true;
+
+function toggleStats() {
+    showStats = !showStats;
+    const btn = document.getElementById('toggle-stats-btn');
+    btn.innerText = showStats ? "👁️ Hide Stats" : "🙈 Show Stats";
+    btn.style.background = showStats ? "var(--primary)" : "#555";
+    updateSummary();
+}
+
+// --- Updated Summary with Work/Break Logic ---
+function updateSummary() {
+    let html = '';
+    
+    // Header for the Summary Area with the new Toggle
+    const summaryHeader = `
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;" class="no-print">
+            <h3 style="margin:0;">Shift Summary</h3>
+            <button id="toggle-stats-btn" class="btn-primary" onclick="toggleStats()" style="padding:5px 10px; font-size:12px;">
+                ${showStats ? "👁️ Hide Stats" : "🙈 Show Stats"}
+            </button>
+        </div>
+    `;
+
+    staffData.forEach(worker => {
+        let workMin = 0;
+        let timeline = [];
+        
+        // 1. Calculate the 'Duty Window' for this worker within the CURRENT VIEW
+        currentViewTimes.forEach(t => {
+            if (!isTimeInRange(t, worker.start, worker.end)) return;
+            
+            let hits = positions.filter(p => assignments[`${t}-${p}`] === worker.name);
+            let curP = hits.length > 0 ? hits[0] : "Break";
+            
+            timeline.push({ time: t, pos: curP });
+            if (curP !== "Break") workMin += 15;
         });
-        document.getElementById('summary-list').innerHTML = html || "No staff on duty.";
-    }
+
+        if (timeline.length === 0) return; // Skip workers not in this view
+
+        // 2. Calculate Total Break Time for this window
+        let totalDutyMin = timeline.length * 15;
+        let breakMin = totalDutyMin - workMin;
+
+        // 3. Merge identical consecutive positions for the timeline display
+        let merged = [];
+        let s = timeline[0].time, curP = timeline[0].pos;
+        for (let i = 1; i <= timeline.length; i++) {
+            if (i === timeline.length || timeline[i].pos !== curP) {
+                merged.push({ 
+                    s, 
+                    e: (i === timeline.length ? getEnd(timeline[i - 1].time) : timeline[i].time), 
+                    p: curP 
+                });
+                if (i < timeline.length) { s = timeline[i].time; curP = timeline[i].pos; }
+            }
+        }
+
+        // 4. Build the Card HTML
+        const statsHtml = showStats ? `
+            <div style="font-size: 0.85em; color: #666; margin-bottom: 5px;">
+                <b>Work:</b> ${Math.floor(workMin/60)}h ${workMin%60}m | 
+                <b>Break:</b> ${Math.floor(breakMin/60)}h ${breakMin%60}m
+            </div>` : '';
+
+        html += `
+            <div class="summary-item">
+                <div style="display:flex; justify-content:space-between;">
+                    <strong>${worker.name}</strong>
+                    <small class="no-print">${worker.start} - ${worker.end}</small>
+                </div>
+                ${statsHtml}
+                <hr style="border:0; border-top:1px solid #eee; margin:8px 0;">
+                ${merged.map(m => `
+                    <div class="timeline-row">
+                        <span>${m.s} - ${m.e}</span>
+                        <span class="pos-label" style="${m.p === 'Break' ? 'color:#e67e22' : ''}">${m.p}</span>
+                    </div>`).join('')}
+            </div>`;
+    });
+
+    document.getElementById('summary-area').innerHTML = summaryHeader + `<div id="summary-list">${html || "No staff assigned."}</div>`;
+}
 
     function getEnd(t) {
         let [h, m] = t.split(':').map(Number);
