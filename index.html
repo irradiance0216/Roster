@@ -3,12 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Shift Master Pro</title>
+    <title>July's Garden: Shift Master Pro</title>
     <style>
         :root { --primary: #4a90e2; --bg: #f4f7f6; --text: #333; --accent: #27ae60; --danger: #e74c3c; --closed: #34495e; --swap: #9b59b6; }
         body { font-family: -apple-system, sans-serif; background: var(--bg); color: var(--text); padding: 10px; margin: 0; }
         
+        /* --- PDF & Print Fixes --- */
         @media print { 
+            * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
             .no-print, #palette, .btn-group, button, hr { display: none !important; } 
             .table-wrapper { max-height: none !important; overflow: visible !important; width: 100% !important; }
             table { width: 100% !important; table-layout: auto !important; }
@@ -43,6 +45,9 @@
         tr:hover { background-color: rgba(74, 144, 226, 0.1) !important; }
         td:hover::after { content: ""; position: absolute; background-color: rgba(74, 144, 226, 0.05); left: 0; right: 0; top: -5000px; bottom: -5000px; z-index: -1; pointer-events: none; }
         
+        /* Visual indicator for Column Lock */
+        .locked-col-head { background-color: #ffeaa7 !important; border-bottom: 3px solid #fdcb6e !important; }
+
         .painted-closed { background: var(--closed) !important; color: white !important; }
 
         /* --- Summary Gallery --- */
@@ -95,7 +100,7 @@
         <button id="swap-mode-btn" class="btn-swap" onclick="toggleSwapMode()" style="font-size: 12px;">Swap Mode: OFF</button>
         <div style="margin-left:auto; display:flex; gap:5px;">
             <button onclick="downloadCSV()" style="background:#555; color:white;">📥 CSV</button>
-            <button onclick="window.print()" class="btn-accent">🖨️ Print (Landscape!)</button>
+            <button onclick="window.print()" class="btn-accent">🖨️ Print</button>
         </div>
     </div>
 
@@ -125,14 +130,14 @@
     let staffData = []; 
     let assignments = {}; 
     let currentViewTimes = [];
-    let activeBrush = null, isStickyPainting = false, isSwapMode = false, swapPair = [], showStats = true;
+    let activeBrush = null, isStickyPainting = false, lockedColumn = null, isSwapMode = false, swapPair = [], showStats = true;
 
     function getWorkerColor(name) {
         let idx = staffData.findIndex(s => s.name === name);
         return idx === -1 ? "#ffffff" : workerColors[idx % workerColors.length];
     }
 
-    // --- SYSTEM DATA ---
+    // --- SYSTEM DATA & AUTO-SAVE ---
     function autoSave() {
         const data = {
             positions,
@@ -173,10 +178,9 @@
     function addNewStaff(saved = null) {
         const div = document.createElement('div');
         div.className = 'btn-group';
-        div.style.marginBottom = "10px";
         div.innerHTML = `
             <input type="text" placeholder="Name" class="staff-name" value="${saved?.name || ''}" oninput="autoSave()" style="flex:1;">
-            <button onclick="renameWorkerPrompt('${saved?.name || ''}')" title="Global Rename" style="padding:5px; background:#ddd;">✏️</button>
+            <button onclick="renameWorkerPrompt('${saved?.name || ''}')" title="Rename Everywhere" style="background:#eee; padding:5px;">✏️</button>
             <select class="staff-shift" onchange="applyPreset(this);autoSave()">
                 <option value="">Shift</option>
                 ${Object.keys(shiftPresets).map(k => `<option value="${k}" ${saved?.shiftId === k ? 'selected' : ''}>${k}</option>`).join('')}
@@ -190,22 +194,11 @@
 
     function renameWorkerPrompt(oldName) {
         if(!oldName) return;
-        let newName = prompt(`Rename "${oldName}" everywhere?`, oldName);
+        let newName = prompt(`Rename "${oldName}" globally?`, oldName);
         if(newName && newName !== oldName) {
-            // Update Registry Input
-            Array.from(document.querySelectorAll('.staff-name')).forEach(input => {
-                if(input.value === oldName) input.value = newName;
-            });
-            // Update Grid Assignments
-            Object.keys(assignments).forEach(key => {
-                if(assignments[key] === oldName) assignments[key] = newName;
-            });
-            autoSave();
-            if(document.getElementById('editor-area').style.display !== 'none') {
-                renderEditor();
-                updateSummary();
-            }
-            alert(`Updated ${oldName} to ${newName} across the entire system.`);
+            Array.from(document.querySelectorAll('.staff-name')).forEach(i => { if(i.value === oldName) i.value = newName; });
+            Object.keys(assignments).forEach(k => { if(assignments[k] === oldName) assignments[k] = newName; });
+            autoSave(); if(document.getElementById('editor-area').style.display !== 'none') { renderEditor(); updateSummary(); }
         }
     }
 
@@ -217,7 +210,7 @@
         row.querySelector('.staff-end').value = e;
     }
 
-    // --- CSV ENGINE ---
+    // --- CSV IMPORT/EXPORT ---
     function downloadCSV() {
         let csv = "DATA_TYPE,Time," + positions.join(",") + "\n";
         currentViewTimes.forEach(t => {
@@ -229,7 +222,7 @@
         staffData.forEach(s => csv += `META_STAFF,${s.name},${s.start},${s.end},${s.shiftId || ''}\n`);
         const blob = new Blob([csv], { type: 'text/csv' });
         const a = document.createElement('a');
-        a.href = window.URL.createObjectURL(blob); a.download = 'july_garden_roster.csv'; a.click();
+        a.href = window.URL.createObjectURL(blob); a.download = 'july_garden_template.csv'; a.click();
     }
 
     function handleImport(input) {
@@ -248,12 +241,12 @@
             });
             if (newPos.length) positions = newPos;
             if (newStaff.length) { document.getElementById('staff-input-list').innerHTML = ''; newStaff.forEach(s => addNewStaff(s)); }
-            assignments = newAssign; renderPositions(); autoSave(); alert("Imported Template Successfully!");
+            assignments = newAssign; renderPositions(); autoSave(); alert("Template Loaded!");
         };
         reader.readAsText(input.files[0]);
     }
 
-    // --- EDITOR ---
+    // --- EDITOR & SAFE PAINT ENGINE ---
     function setView(sTime, eTime, title) {
         staffData = Array.from(document.querySelectorAll('#staff-input-list > div')).map(row => ({
             name: row.querySelector('.staff-name').value.trim(),
@@ -261,7 +254,6 @@
             end: row.querySelector('.staff-end').value,
             shiftId: row.querySelector('.staff-shift').value
         })).filter(s => s.name);
-
         document.getElementById('editor-area').style.display = 'block';
         currentViewTimes = [];
         let curr = new Date(`2026-01-01T${sTime}:00`), stop = new Date(`2026-01-01T${eTime}:00`);
@@ -273,7 +265,7 @@
     function renderEditor() {
         document.getElementById('worker-palette').innerHTML = staffData.map(s => 
             `<div class="chip" onclick="selectBrush('${s.name}', this)" id="brush-${s.name}" style="background:${getWorkerColor(s.name)}">${s.name}</div>`).join('');
-        document.getElementById('table-head').innerHTML = `<th>Time</th>` + positions.map(p => `<th>${p}</th>`).join('');
+        document.getElementById('table-head').innerHTML = `<th class="no-print">Time</th>` + positions.map(p => `<th id="head-${p}">${p}</th>`).join('');
         document.getElementById('table-body').innerHTML = currentViewTimes.map(t => {
             return `<tr><td>${t}</td>${positions.map(p => {
                 let v = assignments[`${t}-${p}`] || "-";
@@ -284,27 +276,22 @@
         }).join('');
     }
 
-    function selectBrush(name, el) {
-        if (isSwapMode) {
-            if (swapPair.includes(name)) return;
-            swapPair.push(name); el.classList.add('swap-target');
-            if (swapPair.length === 2) { executeSwap(); }
-            return;
-        }
-        activeBrush = name;
-        document.querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
-        el.classList.add('active');
-    }
-
     function toggleStickyPaint(el) {
         if(!activeBrush || isSwapMode) return;
-        isStickyPainting = !isStickyPainting;
-        document.body.style.cursor = isStickyPainting ? "crosshair" : "default";
-        if(isStickyPainting) paint(el);
-        else { autoSave(); updateSummary(); }
+        if (isStickyPainting) {
+            isStickyPainting = false; lockedColumn = null;
+            document.body.style.cursor = "default";
+            document.querySelectorAll('th').forEach(th => th.classList.remove('locked-col-head'));
+            autoSave(); updateSummary();
+        } else {
+            isStickyPainting = true; lockedColumn = el.dataset.pos;
+            document.body.style.cursor = "crosshair";
+            document.getElementById(`head-${lockedColumn}`).classList.add('locked-col-head');
+            paint(el);
+        }
     }
 
-    function hoverPaint(el) { if(isStickyPainting) paint(el); }
+    function hoverPaint(el) { if(isStickyPainting && el.dataset.pos === lockedColumn) paint(el); }
 
     function paint(el) {
         let t = el.dataset.time, p = el.dataset.pos;
@@ -314,13 +301,25 @@
         let w = staffData.find(s => s.name === activeBrush);
         if(!isTimeInRange(t, w.start, w.end)) return;
         let conflict = positions.find(pos => pos !== p && assignments[`${t}-${pos}`] === activeBrush);
-        if (conflict) { alert(`CONFLICT: ${activeBrush} is at ${conflict}!`); isStickyPainting = false; return; }
+        if (conflict) { alert(`${activeBrush} is at ${conflict}!`); isStickyPainting = false; return; }
         assignments[`${t}-${p}`] = activeBrush; el.innerText = activeBrush; el.style.background = getWorkerColor(activeBrush);
     }
 
     function isTimeInRange(target, s, e) {
         if (!s || !e) return false;
         return s < e ? (target >= s && target < e) : (target >= s || target < e);
+    }
+
+    function selectBrush(name, el) {
+        if (isSwapMode) {
+            if (swapPair.includes(name)) return;
+            swapPair.push(name); el.classList.add('swap-target');
+            if (swapPair.length === 2) executeSwap();
+            return;
+        }
+        activeBrush = name;
+        document.querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
+        el.classList.add('active');
     }
 
     function toggleSwapMode() {
@@ -336,6 +335,7 @@
         autoSave(); renderEditor(); updateSummary(); toggleSwapMode();
     }
 
+    // --- SUMMARY ENGINE ---
     function updateSummary() {
         let html = '';
         staffData.forEach(worker => {
