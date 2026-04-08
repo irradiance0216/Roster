@@ -5,89 +5,108 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>July's Garden: Shift Master Pro</title>
     <style>
-        :root { --primary: #4a90e2; --bg: #f4f7f6; --text: #333; --accent: #27ae60; --danger: #e74c3c; --closed: #34495e; --swap: #9b59b6; --bulk: #f39c12; }
-        body { font-family: -apple-system, sans-serif; background: var(--bg); color: var(--text); padding: 10px; margin: 0; }
+        :root { 
+            --primary: #ffb7c5; /* Sakura Pink */
+            --bg: #fff5f7; 
+            --text: #4a4a4a; 
+            --accent: #ff8fa3; 
+            --danger: #ff4d6d; 
+            --closed: #5c5c5c; 
+            --bulk: #f39c12;
+            --card-bg: rgba(255, 255, 255, 0.9);
+        }
         
-        @media print { 
-            * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
-            .no-print, #palette, .btn-group, button, hr { display: none !important; } 
-            .table-wrapper { max-height: none !important; overflow: visible !important; width: 100% !important; }
-            table { width: 100% !important; table-layout: auto !important; }
-            th, td:first-child { position: static !important; background: white !important; min-width: 100px; }
-            th, td { font-size: 9px !important; padding: 2px !important; border: 1px solid #ccc !important; }
-            .summary-item { flex: 1 1 200px !important; break-inside: avoid; border: 1px solid #eee !important; margin: 5px !important; }
+        body { 
+            font-family: -apple-system, sans-serif; 
+            background: var(--bg); 
+            color: var(--text); 
+            padding: 10px; 
+            margin: 0; 
+            overflow-x: hidden;
         }
 
-        .card { background: white; padding: 15px; border-radius: 10px; margin-bottom: 15px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        /* --- Cherry Blossom Animation --- */
+        .cherry-container { position: fixed; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: -1; }
+        .petal { position: absolute; background-color: #ffb7c5; border-radius: 150% 0 150% 0; opacity: 0.7; animation: fall linear infinite; }
+        @keyframes fall {
+            0% { transform: translateY(-10vh) rotate(0deg); opacity: 0; }
+            10% { opacity: 0.8; }
+            90% { opacity: 0.8; }
+            100% { transform: translateY(110vh) rotate(720deg); opacity: 0; }
+        }
+
+        @media print { 
+            .no-print, .cherry-container, #palette, button, hr { display: none !important; } 
+            .table-wrapper { max-height: none !important; overflow: visible !important; }
+            body { background: white; }
+            .card { box-shadow: none; border: 1px solid #eee; }
+        }
+
+        .card { background: var(--card-bg); padding: 15px; border-radius: 15px; margin-bottom: 15px; box-shadow: 0 4px 15px rgba(255,183,197,0.3); backdrop-filter: blur(5px); }
         .btn-group { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; margin-bottom: 10px; }
-        button { padding: 10px 15px; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; transition: opacity 0.2s; }
-        button:hover { opacity: 0.8; }
-        .btn-primary { background: var(--primary); color: white; }
-        .btn-accent { background: var(--accent); color: white; }
-        .btn-swap { background: var(--swap); color: white; }
-        .btn-bulk { background: var(--bulk); color: white; }
+        button { padding: 10px 15px; border: none; border-radius: 20px; cursor: pointer; font-weight: bold; transition: all 0.2s; background: var(--primary); color: white; }
+        button:hover { filter: brightness(1.05); transform: translateY(-1px); }
         
         #palette { position: sticky; top: 0; z-index: 1000; background: white; padding: 10px; border-bottom: 3px solid var(--primary); display: flex; flex-wrap: wrap; gap: 8px; align-items: center;}
-        .chip { padding: 8px 15px; border-radius: 20px; border: 2px solid #ddd; cursor: pointer; font-size: 14px; user-select: none; font-weight: bold; }
-        .chip.active { border-color: var(--primary); outline: 3px solid var(--primary); }
+        .chip { padding: 8px 15px; border-radius: 20px; border: 2px solid #ffd1dc; cursor: pointer; font-size: 14px; user-select: none; font-weight: bold; background: white; }
+        .chip.active { border-color: var(--accent); background: var(--primary); color: white; }
 
-        .table-wrapper { width: 100%; overflow-x: auto; background: white; border-radius: 10px; max-height: 65vh; border: 1px solid #ddd; position: relative; }
-        table { border-collapse: collapse; min-width: 1200px; width: 100%; overflow: hidden; }
-        th, td { border: 1px solid #ddd; padding: 8px; text-align: center; user-select: none; touch-action: none; position: relative; font-size: 13px; }
-        th { background: #f8f9fa; position: sticky; top: 0; z-index: 10; }
-        td:first-child { position: sticky; left: 0; background: #f1f3f5; font-weight: bold; z-index: 5; white-space: nowrap; font-size: 11px; width: 120px; }
+        .table-wrapper { width: 100%; overflow-x: auto; background: white; border-radius: 10px; max-height: 60vh; border: 1px solid #ffd1dc; }
+        table { border-collapse: collapse; min-width: 1200px; width: 100%; }
+        th, td { border: 1px solid #ffd1dc; padding: 8px; text-align: center; font-size: 13px; }
+        th { background: #fff0f3; position: sticky; top: 0; z-index: 10; }
+        td:first-child { position: sticky; left: 0; background: #fff0f3; font-weight: bold; z-index: 5; width: 120px; }
 
-        .locked-col-head { background-color: #ffeaa7 !important; border-bottom: 3px solid #fdcb6e !important; }
-        .bulk-origin { outline: 3px dashed var(--bulk) !important; outline-offset: -3px; }
-
-        #summary-list { display: flex; flex-wrap: wrap; gap: 15px; }
-        .summary-item { flex: 1 1 300px; max-width: 450px; border-left: 8px solid var(--primary); padding: 12px; background: white; border-radius: 8px; font-size: 0.9em; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
-        .timeline-row { display: flex; justify-content: space-between; padding: 4px 0; border-bottom: 1px dashed #eee; }
-        .pos-label { font-weight: bold; color: var(--primary); }
+        .summary-item { flex: 1 1 300px; max-width: 450px; border-left: 8px solid var(--primary); padding: 12px; background: white; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
+        .pos-label { font-weight: bold; color: var(--accent); }
+        .tag { background: #fff0f3; padding: 4px 10px; border-radius: 12px; font-size: 12px; border: 1px solid #ffd1dc; margin-right: 5px; }
     </style>
 </head>
 <body>
 
+<div class="cherry-container" id="cherry-js"></div>
+
 <div class="no-print">
-    <h2 style="text-align:center;">Shift Master Pro 🌸</h2>
+    <h2 style="text-align:center; color: var(--accent);">Sakura Shift Master 🌸</h2>
     
     <div class="card">
-        <h3>1. System Configuration</h3>
-        <div style="display:flex; gap:10px; margin-bottom:15px;">
-            <button onclick="document.getElementById('csv-file').click()" style="background:#555; color:white; flex:1;">📂 Load Previous CSV</button>
+        <h3>1. Registry & Setup</h3>
+        <div class="btn-group">
+            <button onclick="document.getElementById('csv-file').click()" style="background:#555;">📂 Import Previous CSV</button>
             <input type="file" id="csv-file" style="display:none" accept=".csv" onchange="handleImport(this)">
-            <button onclick="clearAllData()" style="background:var(--danger); color:white; flex:1;">🗑️ New Roster</button>
+            <button onclick="clearAllData()" style="background:var(--danger);">🗑️ Reset Garden</button>
         </div>
 
-        <div style="display:flex; gap:15px; flex-wrap:wrap; margin-bottom:15px;">
-            <div style="flex:1; min-width:200px;">
+        <div style="display:flex; gap:15px; flex-wrap:wrap; margin: 15px 0;">
+            <div style="flex:1;">
                 <label><b>Precision:</b></label>
-                <select id="interval-select" onchange="updateIntervalSetting()" style="width:100%; padding:8px; margin-top:5px;">
+                <select id="interval-select" onchange="updateIntervalSetting()" style="width:100%; padding:8px; border-radius:10px; border:1px solid #ffd1dc;">
                     <option value="5">5 Minutes</option>
                     <option value="10">10 Minutes</option>
                     <option value="15" selected>15 Minutes</option>
                 </select>
             </div>
-            <div style="flex:1; min-width:200px;">
-                <label><b>Add Position:</b></label>
-                <div style="display:flex; gap:5px; margin-top:5px;">
-                    <input type="text" id="pos-input" placeholder="e.g. CFD1" style="flex:1; padding:8px; border:1px solid #ccc; border-radius:5px;">
-                    <button class="btn-primary" onclick="addPosition()">Add</button>
+            <div style="flex:1;">
+                <label><b>Add Station:</b></label>
+                <div style="display:flex; gap:5px;">
+                    <input type="text" id="pos-input" placeholder="e.g. CFD1" style="flex:1; padding:8px; border:1px solid #ffd1dc; border-radius:10px;">
+                    <button onclick="addPosition()">Add</button>
                 </div>
             </div>
         </div>
         <div id="pos-list" style="margin-bottom:15px;"></div>
 
-        <h4>Staff Registry (Changes here update the grid automatically)</h4>
+        <h4>Staff Registry</h4>
         <div id="staff-input-list"></div>
-        <button onclick="addNewStaff()" class="btn-accent" style="width:100%;">+ Add Staff Member</button>
-        
-        <hr style="margin:20px 0;">
-        <h3>2. Launch View</h3>
+        <button onclick="addNewStaff()" style="width:100%; background:var(--accent);">+ Add Staff Member</button>
+    </div>
+
+    <div class="card">
+        <h3>2. View Window</h3>
         <div class="btn-group">
-            <button class="btn-primary" onclick="setView('07:45', '15:00')">Early</button>
-            <button class="btn-primary" onclick="setView('14:30', '22:00')">Afternoon</button>
-            <button class="btn-primary" onclick="setView('21:45', '08:00')">Night</button>
+            <button onclick="setView('07:45', '15:00')">Early View</button>
+            <button onclick="setView('14:30', '22:00')">Afternoon View</button>
+            <button onclick="setView('21:45', '08:00')">Night View</button>
         </div>
     </div>
 </div>
@@ -96,12 +115,11 @@
     <div id="palette" class="no-print card">
         <div id="worker-palette" style="display:flex; gap:5px; flex-wrap:wrap;"></div>
         <div class="chip" onclick="selectBrush('CLOSED', this)" style="background:var(--closed);color:white">CLOSED</div>
-        <div class="chip" onclick="selectBrush('UNMANNED', this)" style="background:#fff; color:#333;">Eraser</div>
-        <button id="bulk-mode-btn" class="btn-bulk" onclick="toggleBulkMode()">Bulk Fill: OFF</button>
-        <button id="swap-mode-btn" class="btn-swap" onclick="toggleSwapMode()">Swap: OFF</button>
+        <div class="chip" onclick="selectBrush('UNMANNED', this)">Eraser</div>
+        <button id="bulk-mode-btn" style="background:var(--bulk);" onclick="toggleBulkMode()">Bulk Fill: OFF</button>
         <div style="margin-left:auto; display:flex; gap:5px;">
-            <button onclick="downloadCSV()" style="background:#555; color:white;">📥 Save CSV</button>
-            <button onclick="window.print()" class="btn-accent">🖨️ Print</button>
+            <button onclick="downloadCSV()" style="background:#555;">📥 Export CSV</button>
+            <button onclick="window.print()" style="background:var(--accent);">🖨️ Print</button>
         </div>
     </div>
 
@@ -116,77 +134,22 @@
 </div>
 
 <script>
-    const shiftPresets = {
-        "E1": ["07:45", "15:00"], "E2": ["07:45", "16:00"], "F1": ["08:45", "17:00"],
-        "G1": ["09:45", "18:00"], "H1": ["10:45", "19:00"], "J1": ["11:45", "20:00"],
-        "A1": ["14:30", "22:00"], "N1": ["21:45", "08:00"]
-    };
-
-    const workerColors = ["#e3f2fd", "#f1f8e9", "#fff3e0", "#fce4ec", "#f3e5f5", "#e8eaf6", "#e0f2f1", "#f9fbe7", "#fffde7", "#efebe9"];
-
+    // --- Initial Config ---
+    const shiftPresets = { "E1": ["07:45", "15:00"], "E2": ["07:45", "16:00"], "F1": ["08:45", "17:00"], "G1": ["09:45", "18:00"], "A1": ["14:30", "22:00"], "N1": ["21:45", "08:00"] };
+    const workerColors = ["#ffd1dc", "#ffb7c5", "#ffc0cb", "#ffe4e1", "#fff0f5", "#f8bbd0", "#f48fb1", "#ffccbc", "#d1c4e9", "#e1bee7"];
+    
     let positions = ["EA", "SA", "WA", "TA", "DA"];
-    let staffData = []; let assignments = {}; let currentViewTimes = [];
+    let staffData = []; 
+    let assignments = {}; 
+    let currentViewTimes = [];
     let timeInterval = 15;
-    let activeBrush = null, isStickyPainting = false, lockedColumn = null, isBulkMode = false, bulkStart = null, isSwapMode = false, swapPair = [];
+    let activeBrush = null, isStickyPainting = false, lockedColumn = null, isBulkMode = false, bulkStart = null;
 
-    function getWorkerColor(name) {
-        let idx = staffData.findIndex(s => s.name === name);
-        return idx === -1 ? "#ffffff" : workerColors[idx % workerColors.length];
-    }
-
-    function updateIntervalSetting() { timeInterval = parseInt(document.getElementById('interval-select').value); autoSave(); if(currentViewTimes.length) setView(currentViewTimes[0], getEnd(currentViewTimes[currentViewTimes.length-1])); }
-
-    function autoSave() {
-        const data = {
-            positions, timeInterval, assignments,
-            staff: Array.from(document.querySelectorAll('#staff-input-list > div')).map(row => ({
-                name: row.querySelector('.staff-name').value.trim(),
-                start: row.querySelector('.staff-start').value,
-                end: row.querySelector('.staff-end').value,
-                shiftId: row.querySelector('.staff-shift').value
-            }))
-        };
-        localStorage.setItem('julyGarden_V4', JSON.stringify(data));
-        staffData = data.staff.filter(s => s.name);
-    }
-
-    function loadSavedData() {
-        const saved = localStorage.getItem('julyGarden_V4');
-        if (!saved) return;
-        const data = JSON.parse(saved);
-        positions = data.positions || positions;
-        assignments = data.assignments || {};
-        timeInterval = data.timeInterval || 15;
-        document.getElementById('interval-select').value = timeInterval;
-        renderPositions();
-        document.getElementById('staff-input-list').innerHTML = '';
-        data.staff.forEach(s => addNewStaff(s));
-    }
-
-    function clearAllData() { if(confirm("Start fresh?")) { localStorage.clear(); location.reload(); } }
-
-    function addNewStaff(saved = null) {
-        const div = document.createElement('div');
-        div.className = 'btn-group';
-        div.innerHTML = `
-            <input type="text" placeholder="Name" class="staff-name" value="${saved?.name || ''}" readonly style="flex:1; background:#f0f0f0;">
-            <button onclick="renameWorkerPrompt('${saved?.name || ''}', this)" title="Rename" style="background:#ddd;">✏️</button>
-            <select class="staff-shift" onchange="applyPreset(this)">
-                <option value="">Shift</option>
-                ${Object.keys(shiftPresets).map(k => `<option value="${k}" ${saved?.shiftId === k ? 'selected' : ''}>${k}</option>`).join('')}
-            </select>
-            <input type="time" class="staff-start" value="${saved?.start || ''}" onchange="validateAndSave()"> - 
-            <input type="time" class="staff-end" value="${saved?.end || ''}" onchange="validateAndSave()">
-            <button onclick="this.parentElement.remove();validateAndSave()" style="color:red; background:none;">×</button>
-        `;
-        document.getElementById('staff-input-list').appendChild(div);
-    }
-
-    // This is the core "Auto-Update" logic
-    function validateAndSave() {
-        autoSave(); // Update staffData with newest times
+    // --- Core Logic: The Sync Engine ---
+    function validateAndRefresh() {
+        autoSave(); // Collect current registry inputs
         
-        // Remove assignments that are now outside the worker's shift hours
+        // 1. Scrub assignments: if shift time changed, remove invalid slots
         Object.keys(assignments).forEach(key => {
             let workerName = assignments[key];
             if (workerName === "-" || workerName === "CLOSED") return;
@@ -194,27 +157,39 @@
             let [time, pos] = key.split('-');
             let worker = staffData.find(s => s.name === workerName);
             
-            // If worker was deleted OR they are now assigned outside their new shift time
             if (!worker || !isTimeInRange(time, worker.start, worker.end)) {
                 delete assignments[key];
             }
         });
 
+        // 2. Immediate UI Refresh
         if(document.getElementById('editor-area').style.display !== 'none') {
             renderEditor();
             updateSummary();
         }
     }
 
+    function autoSave() {
+        const rows = Array.from(document.querySelectorAll('#staff-input-list > div'));
+        staffData = rows.map(row => ({
+            name: row.querySelector('.staff-name').value.trim(),
+            start: row.querySelector('.staff-start').value,
+            end: row.querySelector('.staff-end').value,
+            shiftId: row.querySelector('.staff-shift').value
+        })).filter(s => s.name);
+        
+        localStorage.setItem('julyGarden_Sakura', JSON.stringify({ positions, timeInterval, assignments, staff: staffData }));
+    }
+
     function renameWorkerPrompt(oldName, btn) {
         let input = btn.parentElement.querySelector('.staff-name');
-        let newName = prompt(`Rename "${oldName || 'New'}"?`, oldName || "");
+        let newName = prompt(`Rename "${oldName || 'New'}" everywhere?`, oldName || "");
         if(newName && newName !== oldName) {
             if(oldName) {
                 Object.keys(assignments).forEach(k => { if(assignments[k] === oldName) assignments[k] = newName; });
             }
             input.value = newName;
-            validateAndSave();
+            validateAndRefresh(); // This triggers the summary update!
         }
     }
 
@@ -224,52 +199,12 @@
         const row = sel.parentElement;
         row.querySelector('.staff-start').value = s;
         row.querySelector('.staff-end').value = e;
-        validateAndSave();
+        validateAndRefresh();
     }
 
-    // --- CSV ENGINE ---
-    function handleImport(input) {
-        const reader = new FileReader();
-        reader.onload = function(e) {
-            const lines = e.target.result.split('\n');
-            let newStaff = [], newPos = [], newAssign = {}, gridHeaders = [];
-            lines.forEach(line => {
-                const c = line.split(',').map(x => x.trim());
-                if (c[0] === "DATA_TYPE") gridHeaders = c.slice(2);
-                else if (c[0] === "GRID") {
-                    gridHeaders.forEach((h, i) => { if(c[i+2] !== "-") newAssign[`${c[1]}-${h}`] = c[i+2]; });
-                }
-                else if (c[0] === "META_POSITIONS") newPos = c.slice(1).filter(x => x !== "");
-                else if (c[0] === "META_STAFF") newStaff.push({name:c[1], start:c[2], end:c[3], shiftId:c[4]});
-            });
-            if (newPos.length) positions = newPos;
-            assignments = newAssign;
-            document.getElementById('staff-input-list').innerHTML = '';
-            newStaff.forEach(s => addNewStaff(s));
-            renderPositions();
-            validateAndSave(); 
-            alert("CSV Loaded! Roster and Registry are now synced.");
-        };
-        reader.readAsText(input.files[0]);
-    }
-
-    function downloadCSV() {
-        let csv = "DATA_TYPE,Time," + positions.join(",") + "\n";
-        currentViewTimes.forEach(t => {
-            let row = ["GRID", t];
-            positions.forEach(p => row.push(assignments[`${t}-${p}`] || "-"));
-            csv += row.join(",") + "\n";
-        });
-        csv += "META_POSITIONS," + positions.join(",") + "\n";
-        staffData.forEach(s => csv += `META_STAFF,${s.name},${s.start},${s.end},${s.shiftId || ''}\n`);
-        const blob = new Blob([csv], { type: 'text/csv' });
-        const a = document.createElement('a');
-        a.href = window.URL.createObjectURL(blob); a.download = 'july_garden_roster.csv'; a.click();
-    }
-
-    // --- GRID VIEW ---
+    // --- UI Rendering ---
     function setView(sTime, eTime) {
-        autoSave();
+        validateAndRefresh();
         document.getElementById('editor-area').style.display = 'block';
         currentViewTimes = [];
         let curr = new Date(`2026-01-01T${sTime}:00`), stop = new Date(`2026-01-01T${eTime}:00`);
@@ -278,7 +213,8 @@
             currentViewTimes.push(curr.toTimeString().substring(0, 5)); 
             curr.setMinutes(curr.getMinutes() + timeInterval); 
         }
-        renderEditor(); updateSummary();
+        renderEditor(); 
+        updateSummary();
     }
 
     function renderEditor() {
@@ -286,73 +222,12 @@
             `<div class="chip" onclick="selectBrush('${s.name}', this)" id="brush-${s.name}" style="background:${getWorkerColor(s.name)}">${s.name}</div>`).join('');
         document.getElementById('table-head').innerHTML = `<th class="no-print">Time Range</th>` + positions.map(p => `<th id="head-${p}">${p}</th>`).join('');
         document.getElementById('table-body').innerHTML = currentViewTimes.map(t => {
-            let label = `${t} - ${getEnd(t)}`;
-            return `<tr><td>${label}</td>${positions.map(p => {
+            return `<tr><td>${t} - ${getEnd(t)}</td>${positions.map(p => {
                 let v = assignments[`${t}-${p}`] || "-";
-                let color = v === "CLOSED" ? "var(--closed)" : (v !== "-" ? getWorkerColor(v) : "");
-                return `<td onclick="handleCellClick(this)" onpointerenter="hoverPaint(this)" data-time="${t}" data-pos="${p}" style="background:${color}; color:${v==='CLOSED'?'white':''}">${v}</td>`;
+                let bg = v === "CLOSED" ? "var(--closed)" : (v !== "-" ? getWorkerColor(v) : "");
+                return `<td onclick="handleCellClick(this)" onpointerenter="hoverPaint(this)" data-time="${t}" data-pos="${p}" style="background:${bg}; color:${v==='CLOSED'?'white':''}">${v}</td>`;
             }).join('')}</tr>`;
         }).join('');
-    }
-
-    function handleCellClick(el) {
-        if(!activeBrush || isSwapMode) return;
-        if (isBulkMode) {
-            if (!bulkStart) { bulkStart = { time: el.dataset.time, pos: el.dataset.pos }; el.classList.add('bulk-origin'); }
-            else { 
-                if (el.dataset.pos !== bulkStart.pos) { alert("Same column only!"); return; }
-                executeBulkFill(bulkStart.time, el.dataset.time, el.dataset.pos);
-                bulkStart = null; document.querySelectorAll('td').forEach(td => td.classList.remove('bulk-origin'));
-            }
-            return;
-        }
-        if (isStickyPainting) { isStickyPainting = false; lockedColumn = null; document.body.style.cursor = "default"; document.querySelectorAll('th').forEach(th => th.classList.remove('locked-col-head')); validateAndSave(); }
-        else { isStickyPainting = true; lockedColumn = el.dataset.pos; document.body.style.cursor = "crosshair"; document.getElementById(`head-${lockedColumn}`).classList.add('locked-col-head'); paint(el); }
-    }
-
-    function executeBulkFill(s, e, pos) {
-        let t1 = currentViewTimes.indexOf(s), t2 = currentViewTimes.indexOf(e);
-        for (let i = Math.min(t1, t2); i <= Math.max(t1, t2); i++) paint(document.querySelector(`td[data-time="${currentViewTimes[i]}"][data-pos="${pos}"]`));
-        validateAndSave();
-    }
-
-    function hoverPaint(el) { if(isStickyPainting && el.dataset.pos === lockedColumn) paint(el); }
-
-    function paint(el) {
-        let t = el.dataset.time, p = el.dataset.pos;
-        if (activeBrush === 'UNMANNED') { assignments[`${t}-${p}`] = "-"; el.innerText = "-"; el.style.background = ""; return; }
-        if (activeBrush === 'CLOSED') { assignments[`${t}-${p}`] = "CLOSED"; el.innerText = "CLOSED"; el.style.background = "var(--closed)"; el.style.color="white"; return; }
-        let w = staffData.find(s => s.name === activeBrush);
-        if(!isTimeInRange(t, w.start, w.end)) return;
-        let conflict = positions.find(pos => pos !== p && assignments[`${t}-${pos}`] === activeBrush);
-        if (conflict) return;
-        assignments[`${t}-${p}`] = activeBrush; el.innerText = activeBrush; el.style.background = getWorkerColor(activeBrush);
-    }
-
-    function isTimeInRange(target, s, e) {
-        if (!s || !e) return false;
-        return s < e ? (target >= s && target < e) : (target >= s || target < e);
-    }
-
-    function selectBrush(name, el) {
-        if (isSwapMode) {
-            if (swapPair.includes(name)) return;
-            swapPair.push(name); if (swapPair.length === 2) executeSwap();
-            return;
-        }
-        activeBrush = name;
-        document.querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
-        el.classList.add('active');
-    }
-
-    function toggleBulkMode() { isBulkMode = !isBulkMode; isStickyPainting = false; isSwapMode = false; bulkStart = null; document.getElementById('bulk-mode-btn').innerText = isBulkMode ? "Bulk Fill: ON" : "Bulk Fill: OFF"; }
-    function toggleSwapMode() { isSwapMode = !isSwapMode; isBulkMode = false; swapPair = []; document.getElementById('swap-mode-btn').innerText = isSwapMode ? "Swap: ON" : "Swap: OFF"; }
-
-    function executeSwap() {
-        const [w1, w2] = swapPair;
-        Object.keys(assignments).forEach(k => { if (assignments[k] === w1) assignments[k] = "TEMP"; });
-        Object.keys(assignments).forEach(k => { if (assignments[k] === w2) assignments[k] = w1; if (assignments[k] === "TEMP") assignments[k] = w2; });
-        validateAndSave(); toggleSwapMode();
     }
 
     function updateSummary() {
@@ -367,7 +242,7 @@
                 if(curP !== "Break") workMin += timeInterval;
             });
             if(!timeline.length) return;
-            let merged = []; let s = timeline[0].time, curP = timeline[0].pos;
+            let merged = []; let s = timeline[0].time; let curP = timeline[0].pos;
             for(let i=1; i<=timeline.length; i++){
                 if(i===timeline.length || timeline[i].pos !== curP) {
                     merged.push({s, e: (i===timeline.length ? getEnd(timeline[i-1].time) : timeline[i].time), p: curP});
@@ -375,12 +250,55 @@
                 }
             }
             html += `<div class="summary-item">
-                <strong>${worker.name}</strong> (${workMin}m work)
-                <hr style="border:0; border-top:1px solid #eee; margin:5px 0;">
+                <strong>${worker.name}</strong> <span style="font-size:0.8em; color:#888;">(${workMin}m Duty)</span>
+                <hr style="border:0; border-top:1px solid #ffd1dc; margin:5px 0;">
                 ${merged.map(m => `<div class="timeline-row"><span>${m.s}-${m.e}</span><span class="pos-label">${m.p}</span></div>`).join('')}
             </div>`;
         });
-        document.getElementById('summary-area').innerHTML = `<h3>Shift Summary</h3><div id="summary-list">${html}</div>`;
+        document.getElementById('summary-area').innerHTML = `<h3 style="color:var(--accent)">Live Summary</h3><div style="display:flex; flex-wrap:wrap; gap:10px;">${html}</div>`;
+    }
+
+    // --- Helpers ---
+    function handleCellClick(el) {
+        if(!activeBrush) return;
+        if (isBulkMode) {
+            if (!bulkStart) { bulkStart = { time: el.dataset.time, pos: el.dataset.pos }; el.style.outline = "2px dashed var(--bulk)"; }
+            else { 
+                executeBulkFill(bulkStart.time, el.dataset.time, el.dataset.pos);
+                bulkStart = null; renderEditor();
+            }
+            return;
+        }
+        if (isStickyPainting) { isStickyPainting = false; lockedColumn = null; document.body.style.cursor = "default"; validateAndRefresh(); }
+        else { isStickyPainting = true; lockedColumn = el.dataset.pos; document.body.style.cursor = "crosshair"; paint(el); }
+    }
+
+    function executeBulkFill(s, e, pos) {
+        let t1 = currentViewTimes.indexOf(s), t2 = currentViewTimes.indexOf(e);
+        for (let i = Math.min(t1, t2); i <= Math.max(t1, t2); i++) paint(document.querySelector(`td[data-time="${currentViewTimes[i]}"][data-pos="${pos}"]`));
+        validateAndRefresh();
+    }
+
+    function hoverPaint(el) { if(isStickyPainting && el.dataset.pos === lockedColumn) paint(el); }
+
+    function paint(el) {
+        let t = el.dataset.time, p = el.dataset.pos;
+        if (activeBrush === 'UNMANNED') { assignments[`${t}-${p}`] = "-"; }
+        else if (activeBrush === 'CLOSED') { assignments[`${t}-${p}`] = "CLOSED"; }
+        else {
+            let w = staffData.find(s => s.name === activeBrush);
+            if(!isTimeInRange(t, w.start, w.end)) return;
+            if(positions.find(pos => pos !== p && assignments[`${t}-${pos}`] === activeBrush)) return;
+            assignments[`${t}-${p}`] = activeBrush;
+        }
+        el.innerText = assignments[`${t}-${p}`];
+        let v = assignments[`${t}-${p}`];
+        el.style.background = v === "CLOSED" ? "var(--closed)" : (v !== "-" ? getWorkerColor(v) : "");
+    }
+
+    function isTimeInRange(target, s, e) {
+        if (!s || !e) return false;
+        return s < e ? (target >= s && target < e) : (target >= s || target < e);
     }
 
     function getEnd(t) {
@@ -389,13 +307,86 @@
         return `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}`;
     }
 
-    function renderPositions() {
-        document.getElementById('pos-list').innerHTML = positions.map((p, i) => 
-            `<span class="tag">${p} <b onclick="positions.splice(${i},1);renderPositions();validateAndSave()" style="color:red;cursor:pointer;">×</b></span>`).join('');
+    function getWorkerColor(name) { let idx = staffData.findIndex(s => s.name === name); return idx === -1 ? "#ffffff" : workerColors[idx % workerColors.length]; }
+    function selectBrush(name, el) { activeBrush = name; document.querySelectorAll('.chip').forEach(c => c.classList.remove('active')); el.classList.add('active'); }
+    function toggleBulkMode() { isBulkMode = !isBulkMode; isStickyPainting = false; bulkStart = null; document.getElementById('bulk-mode-btn').innerText = isBulkMode ? "Bulk Fill: ON" : "Bulk Fill: OFF"; }
+    function updateIntervalSetting() { timeInterval = parseInt(document.getElementById('interval-select').value); validateAndRefresh(); }
+    function addPosition() { let val = document.getElementById('pos-input').value.trim().toUpperCase(); if(val && !positions.includes(val)) { positions.push(val); renderPositions(); autoSave(); document.getElementById('pos-input').value = ''; } }
+    function renderPositions() { document.getElementById('pos-list').innerHTML = positions.map((p, i) => `<span class="tag">${p} <b onclick="positions.splice(${i},1);renderPositions();validateAndRefresh()" style="color:red;cursor:pointer;">×</b></span>`).join(''); }
+
+    function addNewStaff(saved = null) {
+        const div = document.createElement('div');
+        div.className = 'btn-group';
+        div.innerHTML = `
+            <input type="text" placeholder="Name" class="staff-name" value="${saved?.name || ''}" readonly style="flex:1; background:#fefefe; border:1px solid #ffd1dc; border-radius:10px; padding:5px;">
+            <button onclick="renameWorkerPrompt('${saved?.name || ''}', this)" style="background:#ddd; color:#4a4a4a;">✏️</button>
+            <select class="staff-shift" onchange="applyPreset(this)" style="border-radius:10px; border:1px solid #ffd1dc;">
+                <option value="">Shift</option>
+                ${Object.keys(shiftPresets).map(k => `<option value="${k}" ${saved?.shiftId === k ? 'selected' : ''}>${k}</option>`).join('')}
+            </select>
+            <input type="time" class="staff-start" value="${saved?.start || ''}" onchange="validateAndRefresh()" style="border-radius:10px; border:1px solid #ffd1dc;">
+            <input type="time" class="staff-end" value="${saved?.end || ''}" onchange="validateAndRefresh()" style="border-radius:10px; border:1px solid #ffd1dc;">
+            <button onclick="this.parentElement.remove();validateAndRefresh()" style="background:none; color:red;">×</button>
+        `;
+        document.getElementById('staff-input-list').appendChild(div);
     }
 
-    loadSavedData();
-    if(!document.getElementById('staff-input-list').children.length) addNewStaff();
+    function handleImport(input) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            const lines = e.target.result.split('\n');
+            let newStaff = [], newPos = [], newAssign = {}, gridHeaders = [];
+            lines.forEach(line => {
+                const c = line.split(',').map(x => x.trim());
+                if (c[0] === "DATA_TYPE") gridHeaders = c.slice(2);
+                else if (c[0] === "GRID") gridHeaders.forEach((h, i) => { if(c[i+2] !== "-") newAssign[`${c[1]}-${h}`] = c[i+2]; });
+                else if (c[0] === "META_POSITIONS") newPos = c.slice(1).filter(x => x !== "");
+                else if (c[0] === "META_STAFF") newStaff.push({name:c[1], start:c[2], end:c[3], shiftId:c[4]});
+            });
+            if(newPos.length) positions = newPos;
+            assignments = newAssign;
+            document.getElementById('staff-input-list').innerHTML = '';
+            newStaff.forEach(s => addNewStaff(s));
+            renderPositions(); validateAndRefresh();
+        };
+        reader.readAsText(input.files[0]);
+    }
+
+    function downloadCSV() {
+        let csv = "DATA_TYPE,Time," + positions.join(",") + "\n";
+        currentViewTimes.forEach(t => {
+            let row = ["GRID", t];
+            positions.forEach(p => row.push(assignments[`${t}-${p}`] || "-"));
+            csv += row.join(",") + "\n";
+        });
+        csv += "META_POSITIONS," + positions.join(",") + "\n";
+        staffData.forEach(s => csv += `META_STAFF,${s.name},${s.start},${s.end},${s.shiftId || ''}\n`);
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv' }));
+        a.download = 'july_garden_sakura.csv'; a.click();
+    }
+
+    // --- Cherry Blossom Logic ---
+    function createPetal() {
+        const petal = document.createElement('div');
+        petal.className = 'petal';
+        petal.style.left = Math.random() * 100 + 'vw';
+        petal.style.width = Math.random() * 10 + 5 + 'px';
+        petal.style.height = petal.style.width;
+        petal.style.animationDuration = Math.random() * 3 + 4 + 's';
+        document.getElementById('cherry-js').appendChild(petal);
+        setTimeout(() => petal.remove(), 7000);
+    }
+    setInterval(createPetal, 300);
+
+    // Initial Load
+    const saved = localStorage.getItem('julyGarden_Sakura');
+    if (saved) {
+        const d = JSON.parse(saved);
+        positions = d.positions; assignments = d.assignments; timeInterval = d.timeInterval;
+        d.staff.forEach(s => addNewStaff(s));
+        renderPositions();
+    } else { addNewStaff(); }
 </script>
 </body>
 </html>
