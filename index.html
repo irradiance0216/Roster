@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Shift Helper</title>
+    <title>Shift Master Pro</title>
     <style>
         :root { --primary: #4a90e2; --bg: #f4f7f6; --text: #333; --accent: #27ae60; --danger: #e74c3c; --closed: #34495e; --swap: #9b59b6; --bulk: #f39c12; }
         body { font-family: -apple-system, sans-serif; background: var(--bg); color: var(--text); padding: 10px; margin: 0; }
@@ -28,20 +28,19 @@
         .btn-bulk { background: var(--bulk); color: white; }
         
         #palette { position: sticky; top: 0; z-index: 1000; background: white; padding: 10px; border-bottom: 3px solid var(--primary); display: flex; flex-wrap: wrap; gap: 8px; align-items: center;}
-        .chip { padding: 8px 15px; border-radius: 20px; border: 2px solid #ddd; cursor: pointer; font-size: 14px; user-select: none; font-weight: bold; display: flex; align-items: center; gap: 5px; }
-        .chip.active { border-color: var(--primary); outline: 3px solid var(--primary); }
+        .chip { padding: 8px 15px; border-radius: 20px; border: 2px solid #ddd; cursor: pointer; font-size: 14px; user-select: none; font-weight: bold; display: flex; align-items: center; gap: 5px; transition: all 0.2s; }
+        
+        /* Visual feedback for the active brush */
+        .chip.active { border-color: var(--primary); background: var(--primary) !important; color: white !important; box-shadow: 0 0 10px rgba(74, 144, 226, 0.5); }
         .chip.swap-target { border-color: var(--swap); outline: 3px solid var(--swap); }
 
         .table-wrapper { width: 100%; overflow-x: auto; background: white; border-radius: 10px; max-height: 65vh; border: 1px solid #ddd; position: relative; }
         table { border-collapse: collapse; min-width: 1200px; width: 100%; overflow: hidden; }
-        
-        /* Removed touch-action: none; to restore native mobile scrolling */
-        th, td { border: 1px solid #ddd; padding: 8px; text-align: center; user-select: none; position: relative; font-size: 13px; }
-        
+        th, td { border: 1px solid #ddd; padding: 12px 8px; text-align: center; user-select: none; position: relative; font-size: 13px; min-width: 80px; }
         th { background: #f8f9fa; position: sticky; top: 0; z-index: 10; }
         td:first-child { position: sticky; left: 0; background: #f1f3f5; font-weight: bold; z-index: 5; white-space: nowrap; font-size: 11px; width: 120px; }
 
-        .bulk-origin { outline: 3px dashed var(--bulk) !important; outline-offset: -3px; }
+        .bulk-origin { outline: 3px dashed var(--bulk) !important; outline-offset: -3px; background: #fff9db !important; }
 
         #summary-list { display: flex; flex-wrap: wrap; gap: 15px; }
         .summary-item { flex: 1 1 300px; max-width: 450px; border-left: 8px solid var(--primary); padding: 12px; background: white; border-radius: 8px; font-size: 0.9em; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
@@ -57,7 +56,7 @@
     <div class="card">
         <h3>1. System Configuration</h3>
         <div style="display:flex; gap:10px; margin-bottom:15px;">
-            <button onclick="document.getElementById('csv-file').click()" style="background:#555; color:white; flex:1;">📂 Load Previous CSV</button>
+            <button onclick="document.getElementById('csv-file').click()" style="background:#555; color:white; flex:1;">📂 Load CSV</button>
             <input type="file" id="csv-file" style="display:none" accept=".csv" onchange="handleImport(this)">
             <button onclick="clearAllData()" style="background:var(--danger); color:white; flex:1;">🗑️ New Roster</button>
         </div>
@@ -81,7 +80,7 @@
         </div>
         <div id="pos-list" style="margin-bottom:15px;"></div>
 
-        <h4>Staff Registry (Changes auto-sync with roster)</h4>
+        <h4>Staff Registry</h4>
         <div id="staff-input-list"></div>
         <button onclick="addNewStaff()" class="btn-accent" style="width:100%;">+ Add Staff Member</button>
         
@@ -98,8 +97,8 @@
 <div id="editor-area" style="display:none;">
     <div id="palette" class="no-print card">
         <div id="worker-palette" style="display:flex; gap:5px; flex-wrap:wrap;"></div>
-        <div class="chip" onclick="selectBrush('CLOSED', this)" style="background:var(--closed);color:white">CLOSED</div>
-        <div class="chip" onclick="selectBrush('UNMANNED', this)" style="background:#fff; color:#333;">Eraser</div>
+        <div class="chip" id="brush-CLOSED" onclick="selectBrush('CLOSED', this)" style="background:var(--closed);color:white">CLOSED</div>
+        <div class="chip" id="brush-UNMANNED" onclick="selectBrush('UNMANNED', this)" style="background:#fff; color:#333;">Eraser</div>
         <div style="border-left: 2px solid #ddd; height: 30px; margin: 0 10px;"></div>
         <button id="bulk-mode-btn" class="btn-bulk" onclick="toggleBulkMode()">Bulk Fill: OFF</button>
         <button id="swap-mode-btn" class="btn-swap" onclick="toggleSwapMode()">Swap: OFF</button>
@@ -131,43 +130,22 @@
     let positions = ["EA", "SA", "WA", "TA", "DA"];
     let staffData = []; let assignments = {}; let currentViewTimes = [];
     let timeInterval = 15;
-    
-    // Updated Mouse/Touch interaction variables
     let activeBrush = null, isBulkMode = false, bulkStart = null, isSwapMode = false, swapPair = [];
-    let isMouseDown = false;
-    let lockedColumn = null;
-
-    // Global listeners for desktop drag-to-paint and mobile tap completion
-    document.addEventListener('mousedown', () => isMouseDown = true);
-    document.addEventListener('mouseup', () => { 
-        if(isMouseDown) { 
-            isMouseDown = false; 
-            lockedColumn = null;
-            validateAndRefresh(); 
-        } 
-    });
 
     function getWorkerColor(name) {
         let idx = staffData.findIndex(s => s.name === name);
         return idx === -1 ? "#ffffff" : workerColors[idx % workerColors.length];
     }
 
-    // --- Core Auto-Update Logic ---
     function validateAndRefresh() {
         autoSave(); 
-        
         Object.keys(assignments).forEach(key => {
             let workerName = assignments[key];
             if (workerName === "-" || workerName === "CLOSED") return;
-            
             let [time, pos] = key.split('-');
             let worker = staffData.find(s => s.name === workerName);
-            
-            if (!worker || !isTimeInRange(time, worker.start, worker.end)) {
-                delete assignments[key];
-            }
+            if (!worker || !isTimeInRange(time, worker.start, worker.end)) delete assignments[key];
         });
-
         if(document.getElementById('editor-area').style.display !== 'none') {
             renderEditor();
             updateSummary();
@@ -182,7 +160,6 @@
             end: row.querySelector('.staff-end').value,
             shiftId: row.querySelector('.staff-shift').value
         })).filter(s => s.name);
-        
         localStorage.setItem('julyGarden_Final', JSON.stringify({ positions, timeInterval, assignments, staff: staffData }));
     }
 
@@ -206,7 +183,7 @@
         div.className = 'btn-group';
         div.innerHTML = `
             <input type="text" placeholder="Name" class="staff-name" value="${saved?.name || ''}" readonly style="flex:1; background:#f0f0f0;">
-            <button onclick="renameWorkerPrompt('${saved?.name || ''}', this)" title="Rename" style="background:#ddd;">✏️</button>
+            <button onclick="renameWorkerPrompt('${saved?.name || ''}', this)" style="background:#ddd;">✏️</button>
             <select class="staff-shift" onchange="applyPreset(this)">
                 <option value="">Shift</option>
                 ${Object.keys(shiftPresets).map(k => `<option value="${k}" ${saved?.shiftId === k ? 'selected' : ''}>${k}</option>`).join('')}
@@ -220,11 +197,9 @@
 
     function renameWorkerPrompt(oldName, btn) {
         let input = btn.parentElement.querySelector('.staff-name');
-        let newName = prompt(`Rename "${oldName || 'New'}" everywhere?`, oldName || "");
+        let newName = prompt(`Rename "${oldName || 'New'}"?`, oldName || "");
         if(newName && newName !== oldName) {
-            if(oldName) {
-                Object.keys(assignments).forEach(k => { if(assignments[k] === oldName) assignments[k] = newName; });
-            }
+            if(oldName) Object.keys(assignments).forEach(k => { if(assignments[k] === oldName) assignments[k] = newName; });
             input.value = newName;
             validateAndRefresh();
         }
@@ -255,7 +230,6 @@
         if(currentViewTimes.length) setView(currentViewTimes[0], getEnd(currentViewTimes[currentViewTimes.length-1])); 
     }
 
-    // --- CSV ENGINE ---
     function handleImport(input) {
         const reader = new FileReader();
         reader.onload = function(e) {
@@ -264,9 +238,7 @@
             lines.forEach(line => {
                 const c = line.split(',').map(x => x.trim());
                 if (c[0] === "DATA_TYPE") gridHeaders = c.slice(2);
-                else if (c[0] === "GRID") {
-                    gridHeaders.forEach((h, i) => { if(c[i+2] !== "-") newAssign[`${c[1]}-${h}`] = c[i+2]; });
-                }
+                else if (c[0] === "GRID") gridHeaders.forEach((h, i) => { if(c[i+2] !== "-") newAssign[`${c[1]}-${h}`] = c[i+2]; });
                 else if (c[0] === "META_POSITIONS") newPos = c.slice(1).filter(x => x !== "");
                 else if (c[0] === "META_STAFF") newStaff.push({name:c[1], start:c[2], end:c[3], shiftId:c[4]});
             });
@@ -274,9 +246,7 @@
             assignments = newAssign;
             document.getElementById('staff-input-list').innerHTML = '';
             newStaff.forEach(s => addNewStaff(s));
-            renderPositions();
-            validateAndRefresh(); 
-            alert("CSV Loaded & Synced!");
+            renderPositions(); validateAndRefresh(); 
         };
         reader.readAsText(input.files[0]);
     }
@@ -290,110 +260,39 @@
         });
         csv += "META_POSITIONS," + positions.join(",") + "\n";
         staffData.forEach(s => csv += `META_STAFF,${s.name},${s.start},${s.end},${s.shiftId || ''}\n`);
-        const blob = new Blob([csv], { type: 'text/csv' });
         const a = document.createElement('a');
-        a.href = window.URL.createObjectURL(blob); a.download = 'july_garden_roster.csv'; a.click();
+        a.href = window.URL.createObjectURL(new Blob([csv], { type: 'text/csv' })); 
+        a.download = 'roster.csv'; a.click();
     }
 
-    // --- EDITOR ---
     function setView(sTime, eTime) {
         validateAndRefresh();
         document.getElementById('editor-area').style.display = 'block';
         currentViewTimes = [];
         let curr = new Date(`2026-01-01T${sTime}:00`), stop = new Date(`2026-01-01T${eTime}:00`);
         if (stop <= curr) stop.setDate(stop.getDate() + 1);
-        while (curr < stop) { 
-            currentViewTimes.push(curr.toTimeString().substring(0, 5)); 
-            curr.setMinutes(curr.getMinutes() + timeInterval); 
-        }
+        while (curr < stop) { currentViewTimes.push(curr.toTimeString().substring(0, 5)); curr.setMinutes(curr.getMinutes() + timeInterval); }
         renderEditor(); updateSummary();
     }
 
     function renderEditor() {
+        // Render Worker Palette
         document.getElementById('worker-palette').innerHTML = staffData.map(s => 
-            `<div class="chip" onclick="selectBrush('${s.name}', this)" id="brush-${s.name}" style="background:${getWorkerColor(s.name)}">${s.name}</div>`).join('');
-        document.getElementById('table-head').innerHTML = `<th class="no-print">Time Range</th>` + positions.map(p => `<th id="head-${p}">${p}</th>`).join('');
+            `<div class="chip ${activeBrush === s.name ? 'active' : ''}" onclick="selectBrush('${s.name}', this)" style="background:${getWorkerColor(s.name)}">${s.name}</div>`).join('');
+        
+        // Ensure static brush highlights stay
+        document.getElementById('brush-CLOSED').className = `chip ${activeBrush === 'CLOSED' ? 'active' : ''}`;
+        document.getElementById('brush-UNMANNED').className = `chip ${activeBrush === 'UNMANNED' ? 'active' : ''}`;
+
+        document.getElementById('table-head').innerHTML = `<th class="no-print">Time Range</th>` + positions.map(p => `<th>${p}</th>`).join('');
         document.getElementById('table-body').innerHTML = currentViewTimes.map(t => {
-            let label = `${t} - ${getEnd(t)}`;
-            return `<tr><td>${label}</td>${positions.map(p => {
+            return `<tr><td>${t}-${getEnd(t)}</td>${positions.map(p => {
                 let v = assignments[`${t}-${p}`] || "-";
                 let color = v === "CLOSED" ? "var(--closed)" : (v !== "-" ? getWorkerColor(v) : "");
-                // Replaced onclick/onpointerenter with native mousedown/mouseenter
-                return `<td onmousedown="handleCellDown(this)" onmouseenter="handleCellEnter(this)" data-time="${t}" data-pos="${p}" style="background:${color}; color:${v==='CLOSED'?'white':''}">${v}</td>`;
+                let isStart = (bulkStart && bulkStart.time === t && bulkStart.pos === p);
+                return `<td onclick="handleCellClick(this)" data-time="${t}" data-pos="${p}" class="${isStart ? 'bulk-origin' : ''}" style="background:${color}; color:${v==='CLOSED'?'white':''}">${v}</td>`;
             }).join('')}</tr>`;
         }).join('');
-    }
-
-    function toggleBulkMode() {
-        isBulkMode = !isBulkMode; isSwapMode = false; bulkStart = null;
-        document.getElementById('bulk-mode-btn').innerText = isBulkMode ? "Bulk Fill: ON" : "Bulk Fill: OFF";
-        document.getElementById('swap-mode-btn').innerText = "Swap: OFF";
-        document.querySelectorAll('td').forEach(td => td.classList.remove('bulk-origin'));
-    }
-    
-    function toggleSwapMode() {
-        isSwapMode = !isSwapMode; isBulkMode = false; swapPair = [];
-        document.getElementById('swap-mode-btn').innerText = isSwapMode ? "Swap: ON" : "Swap: OFF";
-        document.getElementById('bulk-mode-btn').innerText = "Bulk Fill: OFF";
-        document.querySelectorAll('.chip').forEach(c => c.classList.remove('active', 'swap-target'));
-    }
-
-    function handleCellDown(el) {
-        if(!activeBrush || isSwapMode) return;
-        
-        if (isBulkMode) {
-            if (!bulkStart) {
-                bulkStart = { time: el.dataset.time, pos: el.dataset.pos };
-                el.classList.add('bulk-origin');
-            } else {
-                if (el.dataset.pos !== bulkStart.pos) { alert("Bulk Fill must be in the same column!"); return; }
-                executeBulkFill(bulkStart.time, el.dataset.time, el.dataset.pos);
-                bulkStart = null;
-                document.querySelectorAll('td').forEach(td => td.classList.remove('bulk-origin'));
-            }
-            return;
-        }
-
-        // Lock to the initial column to prevent messy sideways painting on desktop
-        lockedColumn = el.dataset.pos;
-        paint(el);
-    }
-
-    function handleCellEnter(el) {
-        // Only trigger drag-paint if mouse is down, brush is active, and we are in the starting column
-        if (isMouseDown && activeBrush && !isBulkMode && !isSwapMode) {
-            if (el.dataset.pos === lockedColumn) {
-                paint(el);
-            }
-        }
-    }
-
-    function executeBulkFill(startTime, endTime, pos) {
-        let t1 = currentViewTimes.indexOf(startTime);
-        let t2 = currentViewTimes.indexOf(endTime);
-        for (let i = Math.min(t1, t2); i <= Math.max(t1, t2); i++) {
-            paint(document.querySelector(`td[data-time="${currentViewTimes[i]}"][data-pos="${pos}"]`));
-        }
-        validateAndRefresh();
-    }
-
-    function paint(el) {
-        let t = el.dataset.time, p = el.dataset.pos;
-        if (activeBrush === 'UNMANNED') { assignments[`${t}-${p}`] = "-"; el.innerText = "-"; el.style.background = ""; return; }
-        if (activeBrush === 'CLOSED') { assignments[`${t}-${p}`] = "CLOSED"; el.innerText = "CLOSED"; el.style.background = "var(--closed)"; el.style.color="white"; return; }
-        
-        let w = staffData.find(s => s.name === activeBrush);
-        if(!isTimeInRange(t, w.start, w.end)) return;
-        
-        let conflict = positions.find(pos => pos !== p && assignments[`${t}-${pos}`] === activeBrush);
-        if (conflict) return;
-        
-        assignments[`${t}-${p}`] = activeBrush; el.innerText = activeBrush; el.style.background = getWorkerColor(activeBrush);
-    }
-
-    function isTimeInRange(target, s, e) {
-        if (!s || !e) return false;
-        return s < e ? (target >= s && target < e) : (target >= s || target < e);
     }
 
     function selectBrush(name, el) {
@@ -403,16 +302,67 @@
             if (swapPair.length === 2) executeSwap();
             return;
         }
-        activeBrush = name;
-        document.querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
-        el.classList.add('active');
+        activeBrush = (activeBrush === name) ? null : name; // Toggle selection
+        renderEditor();
+    }
+
+    function handleCellClick(el) {
+        if(!activeBrush || isSwapMode) return;
+        
+        if (isBulkMode) {
+            if (!bulkStart) {
+                bulkStart = { time: el.dataset.time, pos: el.dataset.pos };
+                renderEditor();
+            } else {
+                if (el.dataset.pos !== bulkStart.pos) { alert("Bulk Fill must be in the same column!"); bulkStart = null; renderEditor(); return; }
+                executeBulkFill(bulkStart.time, el.dataset.time, el.dataset.pos);
+                bulkStart = null;
+            }
+            return;
+        }
+        paint(el);
+        validateAndRefresh();
+    }
+
+    function paint(el) {
+        let t = el.dataset.time, p = el.dataset.pos;
+        if (activeBrush === 'UNMANNED') { assignments[`${t}-${p}`] = "-"; return; }
+        if (activeBrush === 'CLOSED') { assignments[`${t}-${p}`] = "CLOSED"; return; }
+        
+        let w = staffData.find(s => s.name === activeBrush);
+        if(!isTimeInRange(t, w.start, w.end)) return;
+        if (positions.find(pos => pos !== p && assignments[`${t}-${pos}`] === activeBrush)) return;
+        
+        assignments[`${t}-${p}`] = activeBrush;
+    }
+
+    function executeBulkFill(startTime, endTime, pos) {
+        let t1 = currentViewTimes.indexOf(startTime), t2 = currentViewTimes.indexOf(endTime);
+        for (let i = Math.min(t1, t2); i <= Math.max(t1, t2); i++) {
+            let el = document.querySelector(`td[data-time="${currentViewTimes[i]}"][data-pos="${pos}"]`);
+            paint(el);
+        }
+        validateAndRefresh();
+    }
+
+    function toggleBulkMode() {
+        isBulkMode = !isBulkMode; isSwapMode = false; bulkStart = null;
+        document.getElementById('bulk-mode-btn').innerText = isBulkMode ? "Bulk Fill: ON" : "Bulk Fill: OFF";
+        renderEditor();
+    }
+    
+    function toggleSwapMode() {
+        isSwapMode = !isSwapMode; isBulkMode = false; swapPair = [];
+        document.getElementById('swap-mode-btn').innerText = isSwapMode ? "Swap: ON" : "Swap: OFF";
+        renderEditor();
     }
 
     function executeSwap() {
         const [w1, w2] = swapPair;
         Object.keys(assignments).forEach(k => { if (assignments[k] === w1) assignments[k] = "TEMP"; });
         Object.keys(assignments).forEach(k => { if (assignments[k] === w2) assignments[k] = w1; if (assignments[k] === "TEMP") assignments[k] = w2; });
-        validateAndRefresh(); toggleSwapMode();
+        isSwapMode = false; document.getElementById('swap-mode-btn').innerText = "Swap: OFF";
+        validateAndRefresh();
     }
 
     function updateSummary() {
@@ -435,8 +385,7 @@
                 }
             }
             html += `<div class="summary-item">
-                <div style="display:flex; justify-content:space-between;"><strong>${worker.name}</strong></div>
-                <div style="font-size:0.8em; color:#666;">Duty Time: ${workMin}m</div>
+                <strong>${worker.name}</strong> (${workMin}m duty)
                 <hr style="border:0; border-top:1px solid #eee; margin:5px 0;">
                 ${merged.map(m => `<div class="timeline-row"><span>${m.s}-${m.e}</span><span class="pos-label">${m.p}</span></div>`).join('')}
             </div>`;
@@ -444,10 +393,10 @@
         document.getElementById('summary-area').innerHTML = `<h3>Live Summary</h3><div id="summary-list">${html}</div>`;
     }
 
+    function isTimeInRange(target, s, e) { return s < e ? (target >= s && target < e) : (target >= s || target < e); }
     function getEnd(t) {
         let [h, m] = t.split(':').map(Number);
-        m += timeInterval; 
-        if(m>=60){ h=(h+Math.floor(m/60))%24; m=m%60; }
+        m += timeInterval; if(m>=60){ h=(h+1)%24; m-=60; }
         return `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}`;
     }
 
