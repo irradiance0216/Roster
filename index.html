@@ -3,93 +3,128 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Shift Master Pro</title>
+    <title>Shift Master Pro: Spring Edition</title>
     <style>
-        :root { --primary: #4a90e2; --bg: #f4f7f6; --text: #333; --accent: #27ae60; --danger: #e74c3c; --closed: #34495e; --swap: #9b59b6; --bulk: #f39c12; }
-        body { font-family: -apple-system, sans-serif; background: var(--bg); color: var(--text); padding: 10px; margin: 0; }
-        
-        @media print { 
-            * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
-            .no-print, #palette, .btn-group, button, hr { display: none !important; } 
-            .table-wrapper { max-height: none !important; overflow: visible !important; width: 100% !important; }
-            table { width: 100% !important; table-layout: auto !important; }
-            th, td:first-child { position: static !important; background: white !important; min-width: 100px; }
-            th, td { font-size: 9px !important; padding: 2px !important; border: 1px solid #ccc !important; }
-            .summary-item { flex: 1 1 200px !important; break-inside: avoid; border: 1px solid #eee !important; margin: 5px !important; }
+        :root { 
+            --primary: #ff85a1; 
+            --primary-dark: #ff5c8d;
+            --bg: #fff0f3; 
+            --text: #4a4a4a; 
+            --accent: #ffb7c5; 
+            --danger: #ff4d4d; 
+            --closed: #6d5959; 
+            --swap: #d4a5a5; 
+            --bulk: #ffcc00; 
         }
 
-        .card { background: white; padding: 15px; border-radius: 10px; margin-bottom: 15px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        body { 
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; 
+            background: var(--bg); 
+            color: var(--text); 
+            padding: 10px; 
+            margin: 0; 
+            overflow-x: hidden;
+        }
+
+        /* --- Cherry Blossom Animation --- */
+        .petal {
+            position: fixed;
+            top: -10%;
+            background-color: #ffb7c5;
+            border-radius: 150% 0 150% 0;
+            opacity: 0.8;
+            pointer-events: none;
+            z-index: 9999;
+            animation: fall linear infinite;
+        }
+        @keyframes fall {
+            0% { transform: translateY(0) rotate(0deg); opacity: 1; }
+            100% { transform: translateY(110vh) rotate(360deg); opacity: 0; }
+        }
+
+        @media print { 
+            * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+            .no-print, #palette, .btn-group, button, hr, .petal { display: none !important; } 
+            .table-wrapper { max-height: none !important; overflow: visible !important; width: 100% !important; }
+            table { width: 100% !important; border: 1px solid #ccc !important; }
+        }
+
+        .card { background: rgba(255, 255, 255, 0.9); padding: 15px; border-radius: 15px; margin-bottom: 15px; box-shadow: 0 4px 10px rgba(255,133,161,0.2); border: 1px solid var(--accent); }
         .btn-group { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; margin-bottom: 10px; }
-        button { padding: 10px 15px; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; transition: opacity 0.2s; }
-        button:hover { opacity: 0.8; }
+        
+        button { 
+            padding: 10px 15px; border: none; border-radius: 20px; cursor: pointer; 
+            font-weight: bold; transition: transform 0.2s, background 0.2s; 
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        button:active { transform: scale(0.95); }
         .btn-primary { background: var(--primary); color: white; }
-        .btn-accent { background: var(--accent); color: white; }
+        .btn-accent { background: var(--accent); color: #8d4b5a; }
         .btn-swap { background: var(--swap); color: white; }
-        .btn-bulk { background: var(--bulk); color: white; }
-        
-        #palette { position: sticky; top: 0; z-index: 1000; background: white; padding: 10px; border-bottom: 3px solid var(--primary); display: flex; flex-wrap: wrap; gap: 8px; align-items: center;}
-        .chip { padding: 8px 15px; border-radius: 20px; border: 2px solid #ddd; cursor: pointer; font-size: 14px; user-select: none; font-weight: bold; display: flex; align-items: center; gap: 5px; transition: all 0.2s; }
-        
-        /* Visual feedback for the active brush */
-        .chip.active { border-color: var(--primary); background: var(--primary) !important; color: white !important; box-shadow: 0 0 10px rgba(74, 144, 226, 0.5); }
-        .chip.swap-target { border-color: var(--swap); outline: 3px solid var(--swap); }
+        .btn-bulk { background: var(--bulk); color: #664d00; }
 
-        .table-wrapper { width: 100%; overflow-x: auto; background: white; border-radius: 10px; max-height: 65vh; border: 1px solid #ddd; position: relative; }
-        table { border-collapse: collapse; min-width: 1200px; width: 100%; overflow: hidden; }
-        th, td { border: 1px solid #ddd; padding: 12px 8px; text-align: center; user-select: none; position: relative; font-size: 13px; min-width: 80px; }
-        th { background: #f8f9fa; position: sticky; top: 0; z-index: 10; }
-        td:first-child { position: sticky; left: 0; background: #f1f3f5; font-weight: bold; z-index: 5; white-space: nowrap; font-size: 11px; width: 120px; }
+        #palette { position: sticky; top: 0; z-index: 1000; background: white; padding: 10px; border-bottom: 4px solid var(--primary); display: flex; flex-wrap: wrap; gap: 8px; align-items: center;}
+        .chip { padding: 8px 18px; border-radius: 25px; border: 2px solid #ffe3e8; cursor: pointer; font-size: 14px; user-select: none; font-weight: bold; transition: all 0.2s; background: white; }
+        .chip.active { background: var(--primary) !important; color: white !important; border-color: var(--primary-dark); box-shadow: 0 0 8px var(--primary); }
 
-        .bulk-origin { outline: 3px dashed var(--bulk) !important; outline-offset: -3px; background: #fff9db !important; }
+        .table-wrapper { width: 100%; overflow-x: auto; background: white; border-radius: 10px; max-height: 60vh; border: 2px solid var(--accent); position: relative; }
+        table { border-collapse: collapse; min-width: 1000px; width: 100%; }
+        th, td { border: 1px solid #ffe3e8; padding: 12px 8px; text-align: center; font-size: 13px; }
+        th { background: #fff5f7; position: sticky; top: 0; z-index: 10; color: var(--primary-dark); }
+        td:first-child { position: sticky; left: 0; background: #fffcfd; font-weight: bold; z-index: 5; border-right: 2px solid var(--accent); }
 
-        #summary-list { display: flex; flex-wrap: wrap; gap: 15px; }
-        .summary-item { flex: 1 1 300px; max-width: 450px; border-left: 8px solid var(--primary); padding: 12px; background: white; border-radius: 8px; font-size: 0.9em; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
-        .timeline-row { display: flex; justify-content: space-between; padding: 4px 0; border-bottom: 1px dashed #eee; }
-        .pos-label { font-weight: bold; color: var(--primary); }
+        .summary-item { 
+            flex: 1 1 300px; max-width: 450px; border-left: 8px solid var(--primary); 
+            padding: 15px; background: white; border-radius: 12px; font-size: 0.9em; 
+            box-shadow: 0 2px 6px rgba(255,133,161,0.1); 
+        }
+        .stat-badge { background: #fff0f3; color: var(--primary-dark); padding: 2px 8px; border-radius: 10px; font-weight: bold; font-size: 0.85em; margin-right: 5px; }
+        .timeline-row { display: flex; justify-content: space-between; padding: 5px 0; border-bottom: 1px dashed #ffd1dc; }
     </style>
 </head>
 <body>
 
+<div id="blossom-container"></div>
+
 <div class="no-print">
-    <h2 style="text-align:center;">Shift Master Pro</h2>
+    <h1 style="text-align:center; color:var(--primary-dark); text-shadow: 1px 1px 2px white;">🌸 Shift Master Pro</h1>
     
     <div class="card">
-        <h3>1. System Configuration</h3>
+        <h3>1. Roster Settings</h3>
         <div style="display:flex; gap:10px; margin-bottom:15px;">
-            <button onclick="document.getElementById('csv-file').click()" style="background:#555; color:white; flex:1;">📂 Load CSV</button>
+            <button onclick="document.getElementById('csv-file').click()" style="background:#8d7a7a; color:white; flex:1;">📂 Load CSV</button>
             <input type="file" id="csv-file" style="display:none" accept=".csv" onchange="handleImport(this)">
-            <button onclick="clearAllData()" style="background:var(--danger); color:white; flex:1;">🗑️ New Roster</button>
+            <button onclick="clearAllData()" style="background:var(--danger); color:white; flex:1;">🗑️ Reset</button>
         </div>
 
-        <div style="display:flex; gap:15px; flex-wrap:wrap; margin-bottom:15px;">
-            <div style="flex:1; min-width:200px;">
-                <label><b>Precision:</b></label>
-                <select id="interval-select" onchange="updateIntervalSetting()" style="width:100%; padding:8px; margin-top:5px;">
-                    <option value="5">5 Minutes</option>
-                    <option value="10">10 Minutes</option>
-                    <option value="15" selected>15 Minutes</option>
+        <div style="display:flex; gap:15px; flex-wrap:wrap;">
+            <div style="flex:1; min-width:180px;">
+                <label><b>Interval:</b></label>
+                <select id="interval-select" onchange="updateIntervalSetting()" style="width:100%; padding:8px; margin-top:5px; border-radius:8px; border:1px solid var(--accent);">
+                    <option value="5">5 Mins</option>
+                    <option value="15" selected>15 Mins</option>
+                    <option value="30">30 Mins</option>
                 </select>
             </div>
-            <div style="flex:1; min-width:200px;">
-                <label><b>Add Position:</b></label>
+            <div style="flex:1; min-width:220px;">
+                <label><b>New Position:</b></label>
                 <div style="display:flex; gap:5px; margin-top:5px;">
-                    <input type="text" id="pos-input" placeholder="e.g. CFD1" style="flex:1; padding:8px; border:1px solid #ccc; border-radius:5px;">
+                    <input type="text" id="pos-input" placeholder="e.g. CFD1" style="flex:1; padding:8px; border:1px solid var(--accent); border-radius:8px;">
                     <button class="btn-primary" onclick="addPosition()">Add</button>
                 </div>
             </div>
         </div>
-        <div id="pos-list" style="margin-bottom:15px;"></div>
+        <div id="pos-list" style="margin:15px 0;"></div>
 
-        <h4>Staff Registry</h4>
+        <h4>Staff Members</h4>
         <div id="staff-input-list"></div>
-        <button onclick="addNewStaff()" class="btn-accent" style="width:100%;">+ Add Staff Member</button>
+        <button onclick="addNewStaff()" class="btn-accent" style="width:100%; margin-top:10px;">+ Add Staff Member</button>
         
-        <hr style="margin:20px 0;">
-        <h3>2. Launch View</h3>
+        <hr style="border:0; border-top:1px solid var(--accent); margin:20px 0;">
         <div class="btn-group">
-            <button class="btn-primary" onclick="setView('07:45', '15:00')">Early View</button>
-            <button class="btn-primary" onclick="setView('14:30', '22:00')">Afternoon View</button>
-            <button class="btn-primary" onclick="setView('21:45', '08:00')">Night View</button>
+            <button class="btn-primary" onclick="setView('07:45', '15:00')">Early Shift</button>
+            <button class="btn-primary" onclick="setView('14:30', '22:00')">Late Shift</button>
+            <button class="btn-primary" onclick="setView('21:45', '08:00')">Night Shift</button>
         </div>
     </div>
 </div>
@@ -99,11 +134,10 @@
         <div id="worker-palette" style="display:flex; gap:5px; flex-wrap:wrap;"></div>
         <div class="chip" id="brush-CLOSED" onclick="selectBrush('CLOSED', this)" style="background:var(--closed);color:white">CLOSED</div>
         <div class="chip" id="brush-UNMANNED" onclick="selectBrush('UNMANNED', this)" style="background:#fff; color:#333;">Eraser</div>
-        <div style="border-left: 2px solid #ddd; height: 30px; margin: 0 10px;"></div>
         <button id="bulk-mode-btn" class="btn-bulk" onclick="toggleBulkMode()">Bulk Fill: OFF</button>
         <button id="swap-mode-btn" class="btn-swap" onclick="toggleSwapMode()">Swap: OFF</button>
         <div style="margin-left:auto; display:flex; gap:5px;">
-            <button onclick="downloadCSV()" style="background:#555; color:white;">📥 Save CSV</button>
+            <button onclick="downloadCSV()" style="background:#8d7a7a; color:white;">📥 Save</button>
             <button onclick="window.print()" class="btn-accent">🖨️ Print</button>
         </div>
     </div>
@@ -125,12 +159,29 @@
         "A1": ["14:30", "22:00"], "N1": ["21:45", "08:00"]
     };
 
-    const workerColors = ["#e3f2fd", "#f1f8e9", "#fff3e0", "#fce4ec", "#f3e5f5", "#e8eaf6", "#e0f2f1", "#f9fbe7", "#fffde7", "#efebe9", "#d1c4e9", "#ffccbc"];
+    // Sakura Palette
+    const workerColors = ["#ffd1dc", "#ffb7c5", "#ffc0cb", "#ffe4e1", "#fff0f5", "#f08080", "#ffdab9", "#e6e6fa", "#faf0e6", "#fffff0"];
 
     let positions = ["EA", "SA", "WA", "TA", "DA"];
     let staffData = []; let assignments = {}; let currentViewTimes = [];
     let timeInterval = 15;
     let activeBrush = null, isBulkMode = false, bulkStart = null, isSwapMode = false, swapPair = [];
+
+    // --- Cherry Blossom Generator ---
+    function createPetals() {
+        const container = document.getElementById('blossom-container');
+        for (let i = 0; i < 15; i++) {
+            const petal = document.createElement('div');
+            petal.className = 'petal';
+            petal.style.left = Math.random() * 100 + 'vw';
+            petal.style.width = Math.random() * 10 + 5 + 'px';
+            petal.style.height = petal.style.width;
+            petal.style.animationDuration = Math.random() * 3 + 4 + 's';
+            petal.style.animationDelay = Math.random() * 5 + 's';
+            container.appendChild(petal);
+        }
+    }
+    createPetals();
 
     function getWorkerColor(name) {
         let idx = staffData.findIndex(s => s.name === name);
@@ -160,11 +211,11 @@
             end: row.querySelector('.staff-end').value,
             shiftId: row.querySelector('.staff-shift').value
         })).filter(s => s.name);
-        localStorage.setItem('julyGarden_Final', JSON.stringify({ positions, timeInterval, assignments, staff: staffData }));
+        localStorage.setItem('julyGarden_Spring', JSON.stringify({ positions, timeInterval, assignments, staff: staffData }));
     }
 
     function loadSavedData() {
-        const saved = localStorage.getItem('julyGarden_Final');
+        const saved = localStorage.getItem('julyGarden_Spring');
         if (!saved) return;
         const data = JSON.parse(saved);
         positions = data.positions || positions;
@@ -181,23 +232,26 @@
     function addNewStaff(saved = null) {
         const div = document.createElement('div');
         div.className = 'btn-group';
+        div.style.background = "#fff";
+        div.style.padding = "5px";
+        div.style.borderRadius = "10px";
         div.innerHTML = `
-            <input type="text" placeholder="Name" class="staff-name" value="${saved?.name || ''}" readonly style="flex:1; background:#f0f0f0;">
-            <button onclick="renameWorkerPrompt('${saved?.name || ''}', this)" style="background:#ddd;">✏️</button>
-            <select class="staff-shift" onchange="applyPreset(this)">
+            <input type="text" placeholder="Name" class="staff-name" value="${saved?.name || ''}" readonly style="flex:1; border:none; background:#f9f9f9; padding:5px;">
+            <button onclick="renameWorkerPrompt('${saved?.name || ''}', this)" style="background:#eee; font-size:12px;">✏️</button>
+            <select class="staff-shift" onchange="applyPreset(this)" style="border:1px solid #eee; border-radius:5px;">
                 <option value="">Shift</option>
                 ${Object.keys(shiftPresets).map(k => `<option value="${k}" ${saved?.shiftId === k ? 'selected' : ''}>${k}</option>`).join('')}
             </select>
-            <input type="time" class="staff-start" value="${saved?.start || ''}" onchange="validateAndRefresh()"> - 
-            <input type="time" class="staff-end" value="${saved?.end || ''}" onchange="validateAndRefresh()">
-            <button onclick="this.parentElement.remove();validateAndRefresh()" style="color:red; background:none;">×</button>
+            <input type="time" class="staff-start" value="${saved?.start || ''}" onchange="validateAndRefresh()" style="border:none;">
+            <input type="time" class="staff-end" value="${saved?.end || ''}" onchange="validateAndRefresh()" style="border:none;">
+            <button onclick="this.parentElement.remove();validateAndRefresh()" style="color:var(--danger); background:none;">×</button>
         `;
         document.getElementById('staff-input-list').appendChild(div);
     }
 
     function renameWorkerPrompt(oldName, btn) {
         let input = btn.parentElement.querySelector('.staff-name');
-        let newName = prompt(`Rename "${oldName || 'New'}"?`, oldName || "");
+        let newName = prompt(`Rename "${oldName || 'Worker'}" everywhere?`, oldName || "");
         if(newName && newName !== oldName) {
             if(oldName) Object.keys(assignments).forEach(k => { if(assignments[k] === oldName) assignments[k] = newName; });
             input.value = newName;
@@ -221,48 +275,13 @@
 
     function renderPositions() {
         document.getElementById('pos-list').innerHTML = positions.map((p, i) => 
-            `<span class="tag" style="background:#eee; padding:5px; border-radius:3px; margin-right:5px; font-size:14px;">${p} <b onclick="positions.splice(${i},1);renderPositions();validateAndRefresh()" style="color:red;cursor:pointer;">×</b></span>`).join('');
+            `<span class="tag" style="background:white; padding:5px 10px; border:1px solid var(--accent); border-radius:15px; margin-right:5px; font-size:13px; font-weight:bold;">${p} <b onclick="positions.splice(${i},1);renderPositions();validateAndRefresh()" style="color:var(--danger);cursor:pointer;">×</b></span>`).join('');
     }
 
     function updateIntervalSetting() { 
         timeInterval = parseInt(document.getElementById('interval-select').value); 
         validateAndRefresh();
         if(currentViewTimes.length) setView(currentViewTimes[0], getEnd(currentViewTimes[currentViewTimes.length-1])); 
-    }
-
-    function handleImport(input) {
-        const reader = new FileReader();
-        reader.onload = function(e) {
-            const lines = e.target.result.split('\n');
-            let newStaff = [], newPos = [], newAssign = {}, gridHeaders = [];
-            lines.forEach(line => {
-                const c = line.split(',').map(x => x.trim());
-                if (c[0] === "DATA_TYPE") gridHeaders = c.slice(2);
-                else if (c[0] === "GRID") gridHeaders.forEach((h, i) => { if(c[i+2] !== "-") newAssign[`${c[1]}-${h}`] = c[i+2]; });
-                else if (c[0] === "META_POSITIONS") newPos = c.slice(1).filter(x => x !== "");
-                else if (c[0] === "META_STAFF") newStaff.push({name:c[1], start:c[2], end:c[3], shiftId:c[4]});
-            });
-            if (newPos.length) positions = newPos;
-            assignments = newAssign;
-            document.getElementById('staff-input-list').innerHTML = '';
-            newStaff.forEach(s => addNewStaff(s));
-            renderPositions(); validateAndRefresh(); 
-        };
-        reader.readAsText(input.files[0]);
-    }
-
-    function downloadCSV() {
-        let csv = "DATA_TYPE,Time," + positions.join(",") + "\n";
-        currentViewTimes.forEach(t => {
-            let row = ["GRID", t];
-            positions.forEach(p => row.push(assignments[`${t}-${p}`] || "-"));
-            csv += row.join(",") + "\n";
-        });
-        csv += "META_POSITIONS," + positions.join(",") + "\n";
-        staffData.forEach(s => csv += `META_STAFF,${s.name},${s.start},${s.end},${s.shiftId || ''}\n`);
-        const a = document.createElement('a');
-        a.href = window.URL.createObjectURL(new Blob([csv], { type: 'text/csv' })); 
-        a.download = 'roster.csv'; a.click();
     }
 
     function setView(sTime, eTime) {
@@ -276,17 +295,15 @@
     }
 
     function renderEditor() {
-        // Render Worker Palette
         document.getElementById('worker-palette').innerHTML = staffData.map(s => 
-            `<div class="chip ${activeBrush === s.name ? 'active' : ''}" onclick="selectBrush('${s.name}', this)" style="background:${getWorkerColor(s.name)}">${s.name}</div>`).join('');
+            `<div class="chip ${activeBrush === s.name ? 'active' : ''}" onclick="selectBrush('${s.name}', this)" style="border-bottom: 4px solid ${getWorkerColor(s.name)}">${s.name}</div>`).join('');
         
-        // Ensure static brush highlights stay
         document.getElementById('brush-CLOSED').className = `chip ${activeBrush === 'CLOSED' ? 'active' : ''}`;
         document.getElementById('brush-UNMANNED').className = `chip ${activeBrush === 'UNMANNED' ? 'active' : ''}`;
 
         document.getElementById('table-head').innerHTML = `<th class="no-print">Time Range</th>` + positions.map(p => `<th>${p}</th>`).join('');
         document.getElementById('table-body').innerHTML = currentViewTimes.map(t => {
-            return `<tr><td>${t}-${getEnd(t)}</td>${positions.map(p => {
+            return `<tr><td>${t} - ${getEnd(t)}</td>${positions.map(p => {
                 let v = assignments[`${t}-${p}`] || "-";
                 let color = v === "CLOSED" ? "var(--closed)" : (v !== "-" ? getWorkerColor(v) : "");
                 let isStart = (bulkStart && bulkStart.time === t && bulkStart.pos === p);
@@ -298,77 +315,49 @@
     function selectBrush(name, el) {
         if (isSwapMode) {
             if (swapPair.includes(name)) return;
-            swapPair.push(name); el.classList.add('swap-target');
+            swapPair.push(name); el.classList.add('active');
             if (swapPair.length === 2) executeSwap();
             return;
         }
-        activeBrush = (activeBrush === name) ? null : name; // Toggle selection
+        activeBrush = (activeBrush === name) ? null : name; 
         renderEditor();
     }
 
     function handleCellClick(el) {
         if(!activeBrush || isSwapMode) return;
-        
         if (isBulkMode) {
-            if (!bulkStart) {
-                bulkStart = { time: el.dataset.time, pos: el.dataset.pos };
-                renderEditor();
-            } else {
-                if (el.dataset.pos !== bulkStart.pos) { alert("Bulk Fill must be in the same column!"); bulkStart = null; renderEditor(); return; }
-                executeBulkFill(bulkStart.time, el.dataset.time, el.dataset.pos);
-                bulkStart = null;
-            }
+            if (!bulkStart) { bulkStart = { time: el.dataset.time, pos: el.dataset.pos }; renderEditor(); } 
+            else { executeBulkFill(bulkStart.time, el.dataset.time, el.dataset.pos); bulkStart = null; }
             return;
         }
-        paint(el);
-        validateAndRefresh();
+        paint(el); validateAndRefresh();
     }
 
     function paint(el) {
         let t = el.dataset.time, p = el.dataset.pos;
         if (activeBrush === 'UNMANNED') { assignments[`${t}-${p}`] = "-"; return; }
         if (activeBrush === 'CLOSED') { assignments[`${t}-${p}`] = "CLOSED"; return; }
-        
         let w = staffData.find(s => s.name === activeBrush);
         if(!isTimeInRange(t, w.start, w.end)) return;
         if (positions.find(pos => pos !== p && assignments[`${t}-${pos}`] === activeBrush)) return;
-        
         assignments[`${t}-${p}`] = activeBrush;
     }
 
-    function executeBulkFill(startTime, endTime, pos) {
-        let t1 = currentViewTimes.indexOf(startTime), t2 = currentViewTimes.indexOf(endTime);
-        for (let i = Math.min(t1, t2); i <= Math.max(t1, t2); i++) {
-            let el = document.querySelector(`td[data-time="${currentViewTimes[i]}"][data-pos="${pos}"]`);
-            paint(el);
-        }
+    function executeBulkFill(sTime, eTime, pos) {
+        let t1 = currentViewTimes.indexOf(sTime), t2 = currentViewTimes.indexOf(eTime);
+        for (let i = Math.min(t1, t2); i <= Math.max(t1, t2); i++) paint(document.querySelector(`td[data-time="${currentViewTimes[i]}"][data-pos="${pos}"]`));
         validateAndRefresh();
     }
 
-    function toggleBulkMode() {
-        isBulkMode = !isBulkMode; isSwapMode = false; bulkStart = null;
-        document.getElementById('bulk-mode-btn').innerText = isBulkMode ? "Bulk Fill: ON" : "Bulk Fill: OFF";
-        renderEditor();
-    }
-    
-    function toggleSwapMode() {
-        isSwapMode = !isSwapMode; isBulkMode = false; swapPair = [];
-        document.getElementById('swap-mode-btn').innerText = isSwapMode ? "Swap: ON" : "Swap: OFF";
-        renderEditor();
-    }
-
-    function executeSwap() {
-        const [w1, w2] = swapPair;
-        Object.keys(assignments).forEach(k => { if (assignments[k] === w1) assignments[k] = "TEMP"; });
-        Object.keys(assignments).forEach(k => { if (assignments[k] === w2) assignments[k] = w1; if (assignments[k] === "TEMP") assignments[k] = w2; });
-        isSwapMode = false; document.getElementById('swap-mode-btn').innerText = "Swap: OFF";
-        validateAndRefresh();
-    }
-
+    // --- SUMMARY ENGINE (Restored Break Time) ---
     function updateSummary() {
         let html = '';
         staffData.forEach(worker => {
             let workMin = 0, timeline = [];
+            
+            // 1. Calculate Total Shift Duration
+            let totalShiftMin = getMinutesBetween(worker.start, worker.end);
+
             currentViewTimes.forEach(t => {
                 if(!isTimeInRange(t, worker.start, worker.end)) return;
                 let hits = positions.filter(p => assignments[`${t}-${p}`] === worker.name);
@@ -376,7 +365,13 @@
                 timeline.push({ time: t, pos: curP });
                 if(curP !== "Break") workMin += timeInterval;
             });
+
             if(!timeline.length) return;
+
+            // 2. Calculate Final Break
+            let breakMin = totalShiftMin - workMin;
+
+            // 3. Merge Timeline View
             let merged = []; let s = timeline[0].time, curP = timeline[0].pos;
             for(let i=1; i<=timeline.length; i++){
                 if(i===timeline.length || timeline[i].pos !== curP) {
@@ -384,24 +379,13 @@
                     if(i<timeline.length){ s = timeline[i].time; curP = timeline[i].pos; }
                 }
             }
+
             html += `<div class="summary-item">
-                <strong>${worker.name}</strong> (${workMin}m duty)
-                <hr style="border:0; border-top:1px solid #eee; margin:5px 0;">
-                ${merged.map(m => `<div class="timeline-row"><span>${m.s}-${m.e}</span><span class="pos-label">${m.p}</span></div>`).join('')}
-            </div>`;
-        });
-        document.getElementById('summary-area').innerHTML = `<h3>Live Summary</h3><div id="summary-list">${html}</div>`;
-    }
-
-    function isTimeInRange(target, s, e) { return s < e ? (target >= s && target < e) : (target >= s || target < e); }
-    function getEnd(t) {
-        let [h, m] = t.split(':').map(Number);
-        m += timeInterval; if(m>=60){ h=(h+1)%24; m-=60; }
-        return `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}`;
-    }
-
-    loadSavedData();
-    if(!document.getElementById('staff-input-list').children.length) addNewStaff();
-</script>
-</body>
-</html>
+                <div style="margin-bottom:8px;">
+                    <strong style="font-size:1.1em; color:var(--primary-dark)">${worker.name}</strong>
+                </div>
+                <div style="display:flex; gap:5px; margin-bottom:10px;">
+                    <span class="stat-badge">Duty: ${workMin}m</span>
+                    <span class="stat-badge" style="background:#e8f5e9; color:#2e7d32;">Break: ${breakMin < 0 ? 0 : breakMin}m</span>
+                </div>
+                ${merged.map(m => `<div class="timeline-row"><span>${m.s}-${m.e}</span><span style="font-weight:bold; color:${m.p==='Break'?'#999':'var(--primar
