@@ -3,153 +3,160 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Shift Master Pro: Spring Edition</title>
+    <title>Shift Master Pro: Studio</title>
     <style>
         :root { 
-            --primary: #ff85a1; 
-            --primary-dark: #ff5c8d;
-            --bg: #fff0f3; 
-            --text: #4a4a4a; 
-            --accent: #ffb7c5; 
-            --danger: #ff4d4d; 
-            --closed: #6d5959; 
-            --swap: #d4a5a5; 
-            --bulk: #ffcc00; 
+            --primary: #2563eb; 
+            --primary-dark: #1e40af;
+            --bg: #f8fafc; 
+            --text: #1e293b; 
+            --accent: #e2e8f0; 
+            --danger: #ef4444; 
+            --closed: #334155; 
+            --swap: #8b5cf6; 
+            --bulk: #f59e0b; 
+            --card-bg: #ffffff;
         }
 
         body { 
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; 
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; 
             background: var(--bg); 
             color: var(--text); 
-            padding: 10px; 
+            padding: 15px; 
             margin: 0; 
-            overflow-x: hidden;
-        }
-
-        /* --- Cherry Blossom Animation --- */
-        .petal {
-            position: fixed;
-            top: -10%;
-            background-color: #ffb7c5;
-            border-radius: 150% 0 150% 0;
-            opacity: 0.8;
-            pointer-events: none;
-            z-index: 9999;
-            animation: fall linear infinite;
-        }
-        @keyframes fall {
-            0% { transform: translateY(0) rotate(0deg); opacity: 1; }
-            100% { transform: translateY(110vh) rotate(360deg); opacity: 0; }
+            line-height: 1.5;
         }
 
         @media print { 
             * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
-            .no-print, #palette, .btn-group, button, hr, .petal { display: none !important; } 
-            .table-wrapper { max-height: none !important; overflow: visible !important; width: 100% !important; }
+            .no-print, #palette, .btn-group, button, hr { display: none !important; } 
+            .table-wrapper { max-height: none !important; overflow: visible !important; }
             table { width: 100% !important; border: 1px solid #ccc !important; }
+            td:first-child { background: #eee !important; }
         }
 
-        .card { background: rgba(255, 255, 255, 0.9); padding: 15px; border-radius: 15px; margin-bottom: 15px; box-shadow: 0 4px 10px rgba(255,133,161,0.2); border: 1px solid var(--accent); }
-        .btn-group { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; margin-bottom: 10px; }
+        .card { 
+            background: var(--card-bg); 
+            padding: 20px; 
+            border-radius: 12px; 
+            margin-bottom: 20px; 
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1); 
+            border: 1px solid #e2e8f0; 
+        }
+
+        .btn-group { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; margin-bottom: 10px; }
         
         button { 
-            padding: 10px 15px; border: none; border-radius: 20px; cursor: pointer; 
-            font-weight: bold; transition: transform 0.2s, background 0.2s; 
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            padding: 10px 18px; border: 1px solid transparent; border-radius: 8px; cursor: pointer; 
+            font-weight: 600; transition: all 0.2s; font-size: 14px;
         }
-        button:active { transform: scale(0.95); }
+        button:active { transform: translateY(1px); }
         .btn-primary { background: var(--primary); color: white; }
-        .btn-accent { background: var(--accent); color: #8d4b5a; }
+        .btn-primary:hover { background: var(--primary-dark); }
+        .btn-accent { background: var(--accent); color: var(--text); }
+        .btn-bulk { background: var(--bulk); color: white; }
         .btn-swap { background: var(--swap); color: white; }
-        .btn-bulk { background: var(--bulk); color: #664d00; }
 
-        #palette { position: sticky; top: 0; z-index: 1000; background: white; padding: 10px; border-bottom: 4px solid var(--primary); display: flex; flex-wrap: wrap; gap: 8px; align-items: center;}
-        .chip { padding: 8px 18px; border-radius: 25px; border: 2px solid #ffe3e8; cursor: pointer; font-size: 14px; user-select: none; font-weight: bold; transition: all 0.2s; background: white; }
-        .chip.active { background: var(--primary) !important; color: white !important; border-color: var(--primary-dark); box-shadow: 0 0 8px var(--primary); }
+        #palette { 
+            position: sticky; top: 0; z-index: 1000; background: white; 
+            padding: 12px; border-bottom: 2px solid var(--accent); 
+            display: flex; flex-wrap: wrap; gap: 10px; align-items: center;
+        }
 
-        .table-wrapper { width: 100%; overflow-x: auto; background: white; border-radius: 10px; max-height: 60vh; border: 2px solid var(--accent); position: relative; }
+        .chip { 
+            padding: 8px 16px; border-radius: 8px; border: 1px solid #cbd5e1; 
+            cursor: pointer; font-size: 13px; user-select: none; font-weight: 600; 
+            transition: all 0.2s; background: #fff;
+        }
+        .chip.active { 
+            background: var(--primary) !important; 
+            color: white !important; 
+            border-color: var(--primary-dark);
+            box-shadow: 0 4px 6px -1px rgba(37, 99, 235, 0.2);
+        }
+
+        .table-wrapper { width: 100%; overflow-x: auto; background: white; border-radius: 8px; max-height: 65vh; border: 1px solid #cbd5e1; position: relative; }
         table { border-collapse: collapse; min-width: 1000px; width: 100%; }
-        th, td { border: 1px solid #ffe3e8; padding: 12px 8px; text-align: center; font-size: 13px; }
-        th { background: #fff5f7; position: sticky; top: 0; z-index: 10; color: var(--primary-dark); }
-        td:first-child { position: sticky; left: 0; background: #fffcfd; font-weight: bold; z-index: 5; border-right: 2px solid var(--accent); }
+        th, td { border: 1px solid #e2e8f0; padding: 12px 10px; text-align: center; font-size: 13px; }
+        th { background: #f1f5f9; position: sticky; top: 0; z-index: 10; font-weight: 700; color: #475569; }
+        td:first-child { position: sticky; left: 0; background: #f8fafc; font-weight: 700; z-index: 5; border-right: 2px solid #cbd5e1; }
 
         .summary-item { 
-            flex: 1 1 300px; max-width: 450px; border-left: 8px solid var(--primary); 
-            padding: 15px; background: white; border-radius: 12px; font-size: 0.9em; 
-            box-shadow: 0 2px 6px rgba(255,133,161,0.1); 
+            flex: 1 1 300px; max-width: 450px; border-top: 4px solid var(--primary); 
+            padding: 15px; background: white; border-radius: 8px; font-size: 0.9em; 
+            box-shadow: 0 1px 2px rgba(0,0,0,0.05); border: 1px solid #e2e8f0;
         }
-        .stat-badge { background: #fff0f3; color: var(--primary-dark); padding: 2px 8px; border-radius: 10px; font-weight: bold; font-size: 0.85em; margin-right: 5px; }
-        .timeline-row { display: flex; justify-content: space-between; padding: 5px 0; border-bottom: 1px dashed #ffd1dc; }
+        .stat-badge { background: #f1f5f9; color: #475569; padding: 3px 10px; border-radius: 6px; font-weight: 700; font-size: 0.8em; margin-right: 5px; }
+        .timeline-row { display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px solid #f1f5f9; }
+        .bulk-origin { outline: 3px solid var(--bulk) !important; outline-offset: -3px; }
     </style>
 </head>
 <body>
 
-<div id="blossom-container"></div>
-
 <div class="no-print">
-    <h1 style="text-align:center; color:var(--primary-dark); text-shadow: 1px 1px 2px white;">🌸 Shift Master Pro</h1>
+    <h2 style="text-align:center; margin-bottom: 25px;">Staff Registry Console</h2>
     
     <div class="card">
-        <h3>1. Roster Settings</h3>
-        <div style="display:flex; gap:10px; margin-bottom:15px;">
-            <button onclick="document.getElementById('csv-file').click()" style="background:#8d7a7a; color:white; flex:1;">📂 Load CSV</button>
+        <h3 style="margin-top:0">1. Setup</h3>
+        <div style="display:flex; gap:10px; margin-bottom:20px;">
+            <button onclick="document.getElementById('csv-file').click()" style="background:#475569; color:white; flex:1;">📂 Import CSV</button>
             <input type="file" id="csv-file" style="display:none" accept=".csv" onchange="handleImport(this)">
-            <button onclick="clearAllData()" style="background:var(--danger); color:white; flex:1;">🗑️ Reset</button>
+            <button onclick="clearAllData()" style="background:#fff; border:1px solid var(--danger); color:var(--danger); flex:1;">🗑️ Clear Data</button>
         </div>
 
-        <div style="display:flex; gap:15px; flex-wrap:wrap;">
-            <div style="flex:1; min-width:180px;">
-                <label><b>Interval:</b></label>
-                <select id="interval-select" onchange="updateIntervalSetting()" style="width:100%; padding:8px; margin-top:5px; border-radius:8px; border:1px solid var(--accent);">
-                    <option value="5">5 Mins</option>
-                    <option value="15" selected>15 Mins</option>
-                    <option value="30">30 Mins</option>
+        <div style="display:flex; gap:20px; flex-wrap:wrap;">
+            <div style="flex:1; min-width:200px;">
+                <label><b>Time Interval:</b></label>
+                <select id="interval-select" onchange="updateIntervalSetting()" style="width:100%; padding:10px; margin-top:8px; border-radius:8px; border:1px solid #cbd5e1;">
+                    <option value="5">5 Minutes</option>
+                    <option value="15" selected>15 Minutes</option>
+                    <option value="30">30 Minutes</option>
                 </select>
             </div>
-            <div style="flex:1; min-width:220px;">
-                <label><b>New Position:</b></label>
-                <div style="display:flex; gap:5px; margin-top:5px;">
-                    <input type="text" id="pos-input" placeholder="e.g. CFD1" style="flex:1; padding:8px; border:1px solid var(--accent); border-radius:8px;">
+            <div style="flex:1; min-width:250px;">
+                <label><b>Add Position:</b></label>
+                <div style="display:flex; gap:8px; margin-top:8px;">
+                    <input type="text" id="pos-input" placeholder="e.g. CFD1" style="flex:1; padding:10px; border:1px solid #cbd5e1; border-radius:8px;">
                     <button class="btn-primary" onclick="addPosition()">Add</button>
                 </div>
             </div>
         </div>
-        <div id="pos-list" style="margin:15px 0;"></div>
+        <div id="pos-list" style="margin-top:15px;"></div>
 
-        <h4>Staff Members</h4>
+        <h4 style="margin-bottom:10px; border-top: 1px solid #eee; padding-top:20px;">Staff Registry</h4>
         <div id="staff-input-list"></div>
-        <button onclick="addNewStaff()" class="btn-accent" style="width:100%; margin-top:10px;">+ Add Staff Member</button>
+        <button onclick="addNewStaff()" class="btn-accent" style="width:100%; margin-top:10px; border: 1px dashed #cbd5e1;">+ Add Staff Member</button>
         
-        <hr style="border:0; border-top:1px solid var(--accent); margin:20px 0;">
-        <div class="btn-group">
-            <button class="btn-primary" onclick="setView('07:45', '15:00')">Early Shift</button>
-            <button class="btn-primary" onclick="setView('14:30', '22:00')">Late Shift</button>
-            <button class="btn-primary" onclick="setView('21:45', '08:00')">Night Shift</button>
+        <div class="btn-group" style="margin-top:30px;">
+            <button class="btn-primary" onclick="setView('07:45', '15:00')">07:45 - 15:00</button>
+            <button class="btn-primary" onclick="setView('14:30', '22:00')">14:30 - 22:00</button>
+            <button class="btn-primary" onclick="setView('21:45', '08:00')">21:45 - 08:00</button>
         </div>
     </div>
 </div>
 
 <div id="editor-area" style="display:none;">
     <div id="palette" class="no-print card">
-        <div id="worker-palette" style="display:flex; gap:5px; flex-wrap:wrap;"></div>
+        <div id="worker-palette" style="display:flex; gap:6px; flex-wrap:wrap;"></div>
+        <div style="border-left: 1px solid #ddd; height: 25px; margin: 0 5px;"></div>
         <div class="chip" id="brush-CLOSED" onclick="selectBrush('CLOSED', this)" style="background:var(--closed);color:white">CLOSED</div>
-        <div class="chip" id="brush-UNMANNED" onclick="selectBrush('UNMANNED', this)" style="background:#fff; color:#333;">Eraser</div>
+        <div class="chip" id="brush-UNMANNED" onclick="selectBrush('UNMANNED', this)">Eraser</div>
         <button id="bulk-mode-btn" class="btn-bulk" onclick="toggleBulkMode()">Bulk Fill: OFF</button>
         <button id="swap-mode-btn" class="btn-swap" onclick="toggleSwapMode()">Swap: OFF</button>
-        <div style="margin-left:auto; display:flex; gap:5px;">
-            <button onclick="downloadCSV()" style="background:#8d7a7a; color:white;">📥 Save</button>
-            <button onclick="window.print()" class="btn-accent">🖨️ Print</button>
+        <div style="margin-left:auto; display:flex; gap:8px;">
+            <button onclick="downloadCSV()" style="background:#475569; color:white;">📥 Export</button>
+            <button onclick="window.print()" class="btn-primary">🖨️ Print</button>
         </div>
     </div>
 
-    <div class="table-wrapper card">
+    <div class="table-wrapper">
         <table>
             <thead><tr id="table-head"></tr></thead>
             <tbody id="table-body"></tbody>
         </table>
     </div>
 
-    <div id="summary-area" class="card"></div>
+    <div id="summary-area" class="card" style="margin-top:20px;"></div>
 </div>
 
 <script>
@@ -159,29 +166,12 @@
         "A1": ["14:30", "22:00"], "N1": ["21:45", "08:00"]
     };
 
-    // Sakura Palette
-    const workerColors = ["#ffd1dc", "#ffb7c5", "#ffc0cb", "#ffe4e1", "#fff0f5", "#f08080", "#ffdab9", "#e6e6fa", "#faf0e6", "#fffff0"];
+    const workerColors = ["#dbeafe", "#dcfce7", "#fef9c3", "#fee2e2", "#f3e8ff", "#ffedd5", "#e0f2fe", "#f1f5f9", "#fae8ff", "#ecfdf5"];
 
     let positions = ["EA", "SA", "WA", "TA", "DA"];
     let staffData = []; let assignments = {}; let currentViewTimes = [];
     let timeInterval = 15;
     let activeBrush = null, isBulkMode = false, bulkStart = null, isSwapMode = false, swapPair = [];
-
-    // --- Cherry Blossom Generator ---
-    function createPetals() {
-        const container = document.getElementById('blossom-container');
-        for (let i = 0; i < 15; i++) {
-            const petal = document.createElement('div');
-            petal.className = 'petal';
-            petal.style.left = Math.random() * 100 + 'vw';
-            petal.style.width = Math.random() * 10 + 5 + 'px';
-            petal.style.height = petal.style.width;
-            petal.style.animationDuration = Math.random() * 3 + 4 + 's';
-            petal.style.animationDelay = Math.random() * 5 + 's';
-            container.appendChild(petal);
-        }
-    }
-    createPetals();
 
     function getWorkerColor(name) {
         let idx = staffData.findIndex(s => s.name === name);
@@ -211,11 +201,11 @@
             end: row.querySelector('.staff-end').value,
             shiftId: row.querySelector('.staff-shift').value
         })).filter(s => s.name);
-        localStorage.setItem('julyGarden_Spring', JSON.stringify({ positions, timeInterval, assignments, staff: staffData }));
+        localStorage.setItem('julyGarden_Studio', JSON.stringify({ positions, timeInterval, assignments, staff: staffData }));
     }
 
     function loadSavedData() {
-        const saved = localStorage.getItem('julyGarden_Spring');
+        const saved = localStorage.getItem('julyGarden_Studio');
         if (!saved) return;
         const data = JSON.parse(saved);
         positions = data.positions || positions;
@@ -227,31 +217,32 @@
         data.staff.forEach(s => addNewStaff(s));
     }
 
-    function clearAllData() { if(confirm("Start fresh?")) { localStorage.clear(); location.reload(); } }
+    function clearAllData() { if(confirm("Start fresh? This deletes everything.")) { localStorage.clear(); location.reload(); } }
 
     function addNewStaff(saved = null) {
         const div = document.createElement('div');
         div.className = 'btn-group';
         div.style.background = "#fff";
-        div.style.padding = "5px";
-        div.style.borderRadius = "10px";
+        div.style.padding = "8px";
+        div.style.borderRadius = "8px";
+        div.style.border = "1px solid #e2e8f0";
         div.innerHTML = `
-            <input type="text" placeholder="Name" class="staff-name" value="${saved?.name || ''}" readonly style="flex:1; border:none; background:#f9f9f9; padding:5px;">
-            <button onclick="renameWorkerPrompt('${saved?.name || ''}', this)" style="background:#eee; font-size:12px;">✏️</button>
-            <select class="staff-shift" onchange="applyPreset(this)" style="border:1px solid #eee; border-radius:5px;">
-                <option value="">Shift</option>
+            <input type="text" placeholder="Worker Name" class="staff-name" value="${saved?.name || ''}" readonly style="flex:1; border:none; background:#f8fafc; padding:5px; font-weight:600;">
+            <button onclick="renameWorkerPrompt('${saved?.name || ''}', this)" style="background:#eee; font-size:12px;">Edit Name</button>
+            <select class="staff-shift" onchange="applyPreset(this)" style="border:1px solid #cbd5e1; border-radius:5px;">
+                <option value="">Shift ID</option>
                 ${Object.keys(shiftPresets).map(k => `<option value="${k}" ${saved?.shiftId === k ? 'selected' : ''}>${k}</option>`).join('')}
             </select>
-            <input type="time" class="staff-start" value="${saved?.start || ''}" onchange="validateAndRefresh()" style="border:none;">
-            <input type="time" class="staff-end" value="${saved?.end || ''}" onchange="validateAndRefresh()" style="border:none;">
-            <button onclick="this.parentElement.remove();validateAndRefresh()" style="color:var(--danger); background:none;">×</button>
+            <input type="time" class="staff-start" value="${saved?.start || ''}" onchange="validateAndRefresh()">
+            <input type="time" class="staff-end" value="${saved?.end || ''}" onchange="validateAndRefresh()">
+            <button onclick="this.parentElement.remove();validateAndRefresh()" style="color:var(--danger); background:none; font-size:20px;">&times;</button>
         `;
         document.getElementById('staff-input-list').appendChild(div);
     }
 
     function renameWorkerPrompt(oldName, btn) {
         let input = btn.parentElement.querySelector('.staff-name');
-        let newName = prompt(`Rename "${oldName || 'Worker'}" everywhere?`, oldName || "");
+        let newName = prompt(`Rename "${oldName || 'Worker'}" throughout roster?`, oldName || "");
         if(newName && newName !== oldName) {
             if(oldName) Object.keys(assignments).forEach(k => { if(assignments[k] === oldName) assignments[k] = newName; });
             input.value = newName;
@@ -275,13 +266,48 @@
 
     function renderPositions() {
         document.getElementById('pos-list').innerHTML = positions.map((p, i) => 
-            `<span class="tag" style="background:white; padding:5px 10px; border:1px solid var(--accent); border-radius:15px; margin-right:5px; font-size:13px; font-weight:bold;">${p} <b onclick="positions.splice(${i},1);renderPositions();validateAndRefresh()" style="color:var(--danger);cursor:pointer;">×</b></span>`).join('');
+            `<span class="tag" style="background:#f1f5f9; padding:5px 12px; border:1px solid #cbd5e1; border-radius:6px; margin-right:8px; font-size:12px; font-weight:700;">${p} <b onclick="positions.splice(${i},1);renderPositions();validateAndRefresh()" style="color:var(--danger);cursor:pointer;margin-left:5px;">&times;</b></span>`).join('');
     }
 
     function updateIntervalSetting() { 
         timeInterval = parseInt(document.getElementById('interval-select').value); 
         validateAndRefresh();
         if(currentViewTimes.length) setView(currentViewTimes[0], getEnd(currentViewTimes[currentViewTimes.length-1])); 
+    }
+
+    function handleImport(input) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            const lines = e.target.result.split('\n');
+            let newStaff = [], newPos = [], newAssign = {}, gridHeaders = [];
+            lines.forEach(line => {
+                const c = line.split(',').map(x => x.trim());
+                if (c[0] === "DATA_TYPE") gridHeaders = c.slice(2);
+                else if (c[0] === "GRID") gridHeaders.forEach((h, i) => { if(c[i+2] && c[i+2] !== "-") newAssign[`${c[1]}-${h}`] = c[i+2]; });
+                else if (c[0] === "META_POSITIONS") newPos = c.slice(1).filter(x => x !== "");
+                else if (c[0] === "META_STAFF") newStaff.push({name:c[1], start:c[2], end:c[3], shiftId:c[4]});
+            });
+            if (newPos.length) positions = newPos;
+            assignments = newAssign;
+            document.getElementById('staff-input-list').innerHTML = '';
+            newStaff.forEach(s => addNewStaff(s));
+            renderPositions(); validateAndRefresh(); 
+        };
+        reader.readAsText(input.files[0]);
+    }
+
+    function downloadCSV() {
+        let csv = "DATA_TYPE,Time," + positions.join(",") + "\n";
+        currentViewTimes.forEach(t => {
+            let row = ["GRID", t];
+            positions.forEach(p => row.push(assignments[`${t}-${p}`] || "-"));
+            csv += row.join(",") + "\n";
+        });
+        csv += "META_POSITIONS," + positions.join(",") + "\n";
+        staffData.forEach(s => csv += `META_STAFF,${s.name},${s.start},${s.end},${s.shiftId || ''}\n`);
+        const a = document.createElement('a');
+        a.href = window.URL.createObjectURL(new Blob([csv], { type: 'text/csv' })); 
+        a.download = 'staff_roster.csv'; a.click();
     }
 
     function setView(sTime, eTime) {
@@ -296,12 +322,12 @@
 
     function renderEditor() {
         document.getElementById('worker-palette').innerHTML = staffData.map(s => 
-            `<div class="chip ${activeBrush === s.name ? 'active' : ''}" onclick="selectBrush('${s.name}', this)" style="border-bottom: 4px solid ${getWorkerColor(s.name)}">${s.name}</div>`).join('');
+            `<div class="chip ${activeBrush === s.name ? 'active' : ''}" onclick="selectBrush('${s.name}', this)" style="border-left: 5px solid ${getWorkerColor(s.name)}">${s.name}</div>`).join('');
         
         document.getElementById('brush-CLOSED').className = `chip ${activeBrush === 'CLOSED' ? 'active' : ''}`;
         document.getElementById('brush-UNMANNED').className = `chip ${activeBrush === 'UNMANNED' ? 'active' : ''}`;
 
-        document.getElementById('table-head').innerHTML = `<th class="no-print">Time Range</th>` + positions.map(p => `<th>${p}</th>`).join('');
+        document.getElementById('table-head').innerHTML = `<th class="no-print">Time Slot</th>` + positions.map(p => `<th>${p}</th>`).join('');
         document.getElementById('table-body').innerHTML = currentViewTimes.map(t => {
             return `<tr><td>${t} - ${getEnd(t)}</td>${positions.map(p => {
                 let v = assignments[`${t}-${p}`] || "-";
@@ -349,13 +375,10 @@
         validateAndRefresh();
     }
 
-    // --- SUMMARY ENGINE (Restored Break Time) ---
     function updateSummary() {
         let html = '';
         staffData.forEach(worker => {
             let workMin = 0, timeline = [];
-            
-            // 1. Calculate Total Shift Duration
             let totalShiftMin = getMinutesBetween(worker.start, worker.end);
 
             currentViewTimes.forEach(t => {
@@ -367,11 +390,8 @@
             });
 
             if(!timeline.length) return;
-
-            // 2. Calculate Final Break
             let breakMin = totalShiftMin - workMin;
 
-            // 3. Merge Timeline View
             let merged = []; let s = timeline[0].time, curP = timeline[0].pos;
             for(let i=1; i<=timeline.length; i++){
                 if(i===timeline.length || timeline[i].pos !== curP) {
@@ -381,11 +401,43 @@
             }
 
             html += `<div class="summary-item">
-                <div style="margin-bottom:8px;">
-                    <strong style="font-size:1.1em; color:var(--primary-dark)">${worker.name}</strong>
-                </div>
-                <div style="display:flex; gap:5px; margin-bottom:10px;">
+                <div style="margin-bottom:10px;"><strong style="font-size:1.1em;">${worker.name}</strong></div>
+                <div style="display:flex; gap:5px; margin-bottom:12px;">
                     <span class="stat-badge">Duty: ${workMin}m</span>
-                    <span class="stat-badge" style="background:#e8f5e9; color:#2e7d32;">Break: ${breakMin < 0 ? 0 : breakMin}m</span>
+                    <span class="stat-badge" style="background:#f0fdf4; color:#166534; border:1px solid #dcfce7">Break: ${breakMin < 0 ? 0 : breakMin}m</span>
                 </div>
-                ${merged.map(m => `<div class="timeline-row"><span>${m.s}-${m.e}</span><span style="font-weight:bold; color:${m.p==='Break'?'#999':'var(--primar
+                ${merged.map(m => `<div class="timeline-row"><span>${m.s}-${m.e}</span><span style="font-weight:700; color:${m.p==='Break'?'#94a3b8':'var(--primary)'}">${m.p}</span></div>`).join('')}
+            </div>`;
+        });
+        document.getElementById('summary-area').innerHTML = `<h3 style="margin-top:0">Live Roster Summary</h3><div id="summary-list" style="display:flex; flex-wrap:wrap; gap:15px;">${html}</div>`;
+    }
+
+    function getMinutesBetween(start, end) {
+        if(!start || !end) return 0;
+        let [sH, sM] = start.split(':').map(Number), [eH, eM] = end.split(':').map(Number);
+        let startTotal = sH * 60 + sM, endTotal = eH * 60 + eM;
+        if(endTotal <= startTotal) endTotal += 1440; 
+        return endTotal - startTotal;
+    }
+
+    function isTimeInRange(target, s, e) { return s < e ? (target >= s && target < e) : (target >= s || target < e); }
+    function getEnd(t) {
+        let [h, m] = t.split(':').map(Number);
+        m += timeInterval; if(m>=60){ h=(h+1)%24; m-=60; }
+        return `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}`;
+    }
+
+    function toggleBulkMode() { isBulkMode = !isBulkMode; isSwapMode = false; bulkStart = null; renderEditor(); document.getElementById('bulk-mode-btn').innerText = isBulkMode ? "Bulk Fill: ON" : "Bulk Fill: OFF"; }
+    function toggleSwapMode() { isSwapMode = !isSwapMode; isBulkMode = false; swapPair = []; renderEditor(); document.getElementById('swap-mode-btn').innerText = isSwapMode ? "Swap: ON" : "Swap: OFF"; }
+    function executeSwap() {
+        const [w1, w2] = swapPair;
+        Object.keys(assignments).forEach(k => { if (assignments[k] === w1) assignments[k] = "TEMP"; });
+        Object.keys(assignments).forEach(k => { if (assignments[k] === w2) assignments[k] = w1; if (assignments[k] === "TEMP") assignments[k] = w2; });
+        isSwapMode = false; document.getElementById('swap-mode-btn').innerText = "Swap: OFF"; validateAndRefresh();
+    }
+
+    loadSavedData();
+    if(!document.getElementById('staff-input-list').children.length) addNewStaff();
+</script>
+</body>
+</html>
