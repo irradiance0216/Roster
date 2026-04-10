@@ -28,7 +28,6 @@
         }
 
         @media print { 
-            * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
             .no-print, #palette, .btn-group, button, hr { display: none !important; } 
             .table-wrapper { max-height: none !important; overflow: visible !important; }
             table { width: 100% !important; border: 1px solid #ccc !important; }
@@ -52,10 +51,34 @@
         }
         button:active { transform: translateY(1px); }
         .btn-primary { background: var(--primary); color: white; }
-        .btn-primary:hover { background: var(--primary-dark); }
         .btn-accent { background: var(--accent); color: var(--text); }
         .btn-bulk { background: var(--bulk); color: white; }
         .btn-swap { background: var(--swap); color: white; }
+
+        /* Registry Row Fixes */
+        .staff-row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background: #fff;
+            padding: 10px;
+            border-radius: 8px;
+            border: 1px solid #e2e8f0;
+            margin-bottom: 8px;
+            flex-wrap: wrap;
+        }
+        .staff-name { flex: 2; min-width: 120px; border: none; background: #f8fafc; padding: 8px; font-weight: 600; border-radius: 4px; }
+        .staff-shift { flex: 1; min-width: 80px; padding: 8px; border: 1px solid #cbd5e1; border-radius: 6px; }
+        
+        /* Fixed dimensions for time boxes to prevent shrinking */
+        .staff-start, .staff-end { 
+            width: 110px; 
+            flex-shrink: 0; 
+            padding: 7px; 
+            border: 1px solid #cbd5e1; 
+            border-radius: 6px;
+            font-family: inherit;
+        }
 
         #palette { 
             position: sticky; top: 0; z-index: 1000; background: white; 
@@ -68,12 +91,7 @@
             cursor: pointer; font-size: 13px; user-select: none; font-weight: 600; 
             transition: all 0.2s; background: #fff;
         }
-        .chip.active { 
-            background: var(--primary) !important; 
-            color: white !important; 
-            border-color: var(--primary-dark);
-            box-shadow: 0 4px 6px -1px rgba(37, 99, 235, 0.2);
-        }
+        .chip.active { background: var(--primary) !important; color: white !important; border-color: var(--primary-dark); }
 
         .table-wrapper { width: 100%; overflow-x: auto; background: white; border-radius: 8px; max-height: 65vh; border: 1px solid #cbd5e1; position: relative; }
         table { border-collapse: collapse; min-width: 1000px; width: 100%; }
@@ -88,33 +106,32 @@
         }
         .stat-badge { background: #f1f5f9; color: #475569; padding: 3px 10px; border-radius: 6px; font-weight: 700; font-size: 0.8em; margin-right: 5px; }
         .timeline-row { display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px solid #f1f5f9; }
-        .bulk-origin { outline: 3px solid var(--bulk) !important; outline-offset: -3px; }
     </style>
 </head>
 <body>
 
 <div class="no-print">
-    <h2 style="text-align:center; margin-bottom: 25px;">Staff Registry Console</h2>
+    <h2 style="text-align:center;">Staff Registry Console</h2>
     
     <div class="card">
-        <h3 style="margin-top:0">1. Setup</h3>
+        <h3>1. Setup</h3>
         <div style="display:flex; gap:10px; margin-bottom:20px;">
             <button onclick="document.getElementById('csv-file').click()" style="background:#475569; color:white; flex:1;">📂 Import CSV</button>
             <input type="file" id="csv-file" style="display:none" accept=".csv" onchange="handleImport(this)">
-            <button onclick="clearAllData()" style="background:#fff; border:1px solid var(--danger); color:var(--danger); flex:1;">🗑️ Clear Data</button>
+            <button onclick="clearAllData()" style="background:#fff; border:1px solid var(--danger); color:var(--danger); flex:1;">🗑️ Clear All</button>
         </div>
 
         <div style="display:flex; gap:20px; flex-wrap:wrap;">
             <div style="flex:1; min-width:200px;">
-                <label><b>Time Interval:</b></label>
+                <label><b>Interval:</b></label>
                 <select id="interval-select" onchange="updateIntervalSetting()" style="width:100%; padding:10px; margin-top:8px; border-radius:8px; border:1px solid #cbd5e1;">
-                    <option value="5">5 Minutes</option>
-                    <option value="15" selected>15 Minutes</option>
-                    <option value="30">30 Minutes</option>
+                    <option value="5">5 Mins</option>
+                    <option value="15" selected>15 Mins</option>
+                    <option value="30">30 Mins</option>
                 </select>
             </div>
             <div style="flex:1; min-width:250px;">
-                <label><b>Add Position:</b></label>
+                <label><b>New Position:</b></label>
                 <div style="display:flex; gap:8px; margin-top:8px;">
                     <input type="text" id="pos-input" placeholder="e.g. CFD1" style="flex:1; padding:10px; border:1px solid #cbd5e1; border-radius:8px;">
                     <button class="btn-primary" onclick="addPosition()">Add</button>
@@ -123,7 +140,7 @@
         </div>
         <div id="pos-list" style="margin-top:15px;"></div>
 
-        <h4 style="margin-bottom:10px; border-top: 1px solid #eee; padding-top:20px;">Staff Registry</h4>
+        <h4 style="margin: 20px 0 10px;">Staff Members</h4>
         <div id="staff-input-list"></div>
         <button onclick="addNewStaff()" class="btn-accent" style="width:100%; margin-top:10px; border: 1px dashed #cbd5e1;">+ Add Staff Member</button>
         
@@ -187,25 +204,22 @@
             let worker = staffData.find(s => s.name === workerName);
             if (!worker || !isTimeInRange(time, worker.start, worker.end)) delete assignments[key];
         });
-        if(document.getElementById('editor-area').style.display !== 'none') {
-            renderEditor();
-            updateSummary();
-        }
+        if(document.getElementById('editor-area').style.display !== 'none') { renderEditor(); updateSummary(); }
     }
 
     function autoSave() {
-        const rows = Array.from(document.querySelectorAll('#staff-input-list > div'));
+        const rows = Array.from(document.querySelectorAll('#staff-input-list .staff-row'));
         staffData = rows.map(row => ({
             name: row.querySelector('.staff-name').value.trim(),
             start: row.querySelector('.staff-start').value,
             end: row.querySelector('.staff-end').value,
             shiftId: row.querySelector('.staff-shift').value
         })).filter(s => s.name);
-        localStorage.setItem('julyGarden_Studio', JSON.stringify({ positions, timeInterval, assignments, staff: staffData }));
+        localStorage.setItem('julyGarden_Final_Clean', JSON.stringify({ positions, timeInterval, assignments, staff: staffData }));
     }
 
     function loadSavedData() {
-        const saved = localStorage.getItem('julyGarden_Studio');
+        const saved = localStorage.getItem('julyGarden_Final_Clean');
         if (!saved) return;
         const data = JSON.parse(saved);
         positions = data.positions || positions;
@@ -217,32 +231,28 @@
         data.staff.forEach(s => addNewStaff(s));
     }
 
-    function clearAllData() { if(confirm("Start fresh? This deletes everything.")) { localStorage.clear(); location.reload(); } }
+    function clearAllData() { if(confirm("Start fresh?")) { localStorage.clear(); location.reload(); } }
 
     function addNewStaff(saved = null) {
         const div = document.createElement('div');
-        div.className = 'btn-group';
-        div.style.background = "#fff";
-        div.style.padding = "8px";
-        div.style.borderRadius = "8px";
-        div.style.border = "1px solid #e2e8f0";
+        div.className = 'staff-row';
         div.innerHTML = `
-            <input type="text" placeholder="Worker Name" class="staff-name" value="${saved?.name || ''}" readonly style="flex:1; border:none; background:#f8fafc; padding:5px; font-weight:600;">
-            <button onclick="renameWorkerPrompt('${saved?.name || ''}', this)" style="background:#eee; font-size:12px;">Edit Name</button>
-            <select class="staff-shift" onchange="applyPreset(this)" style="border:1px solid #cbd5e1; border-radius:5px;">
-                <option value="">Shift ID</option>
+            <input type="text" placeholder="Worker Name" class="staff-name" value="${saved?.name || ''}" readonly>
+            <button onclick="renameWorkerPrompt('${saved?.name || ''}', this)" style="background:#eee; font-size:11px;">Name</button>
+            <select class="staff-shift" onchange="applyPreset(this)">
+                <option value="">Shift</option>
                 ${Object.keys(shiftPresets).map(k => `<option value="${k}" ${saved?.shiftId === k ? 'selected' : ''}>${k}</option>`).join('')}
             </select>
             <input type="time" class="staff-start" value="${saved?.start || ''}" onchange="validateAndRefresh()">
             <input type="time" class="staff-end" value="${saved?.end || ''}" onchange="validateAndRefresh()">
-            <button onclick="this.parentElement.remove();validateAndRefresh()" style="color:var(--danger); background:none; font-size:20px;">&times;</button>
+            <button onclick="this.parentElement.remove();validateAndRefresh()" style="color:var(--danger); background:none; font-size:24px; padding:0 10px;">&times;</button>
         `;
         document.getElementById('staff-input-list').appendChild(div);
     }
 
     function renameWorkerPrompt(oldName, btn) {
         let input = btn.parentElement.querySelector('.staff-name');
-        let newName = prompt(`Rename "${oldName || 'Worker'}" throughout roster?`, oldName || "");
+        let newName = prompt(`Update name?`, oldName || "");
         if(newName && newName !== oldName) {
             if(oldName) Object.keys(assignments).forEach(k => { if(assignments[k] === oldName) assignments[k] = newName; });
             input.value = newName;
@@ -333,7 +343,7 @@
                 let v = assignments[`${t}-${p}`] || "-";
                 let color = v === "CLOSED" ? "var(--closed)" : (v !== "-" ? getWorkerColor(v) : "");
                 let isStart = (bulkStart && bulkStart.time === t && bulkStart.pos === p);
-                return `<td onclick="handleCellClick(this)" data-time="${t}" data-pos="${p}" class="${isStart ? 'bulk-origin' : ''}" style="background:${color}; color:${v==='CLOSED'?'white':''}">${v}</td>`;
+                return `<td onclick="handleCellClick(this)" data-time="${t}" data-pos="${p}" style="background:${color}; color:${v==='CLOSED'?'white':''}">${v}</td>`;
             }).join('')}</tr>`;
         }).join('');
     }
