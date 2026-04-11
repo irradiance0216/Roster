@@ -55,7 +55,6 @@
         .btn-bulk { background: var(--bulk); color: white; }
         .btn-swap { background: var(--swap); color: white; }
 
-        /* Registry Row Fixes */
         .staff-row {
             display: flex;
             align-items: center;
@@ -70,9 +69,9 @@
         .staff-name { flex: 2; min-width: 120px; border: none; background: #f8fafc; padding: 8px; font-weight: 600; border-radius: 4px; }
         .staff-shift { flex: 1; min-width: 80px; padding: 8px; border: 1px solid #cbd5e1; border-radius: 6px; }
         
-        /* Fixed dimensions for time boxes to prevent shrinking */
+        /* Consistent Mobile Dimensions */
         .staff-start, .staff-end { 
-            width: 110px; 
+            width: 105px; 
             flex-shrink: 0; 
             padding: 7px; 
             border: 1px solid #cbd5e1; 
@@ -106,6 +105,8 @@
         }
         .stat-badge { background: #f1f5f9; color: #475569; padding: 3px 10px; border-radius: 6px; font-weight: 700; font-size: 0.8em; margin-right: 5px; }
         .timeline-row { display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px solid #f1f5f9; }
+        
+        .toggle-container { margin-top: 15px; display: flex; align-items: center; gap: 10px; font-size: 14px; font-weight: 600; }
     </style>
 </head>
 <body>
@@ -118,7 +119,7 @@
         <div style="display:flex; gap:10px; margin-bottom:20px;">
             <button onclick="document.getElementById('csv-file').click()" style="background:#475569; color:white; flex:1;">📂 Import CSV</button>
             <input type="file" id="csv-file" style="display:none" accept=".csv" onchange="handleImport(this)">
-            <button onclick="clearAllData()" style="background:#fff; border:1px solid var(--danger); color:var(--danger); flex:1;">🗑️ Clear All</button>
+            <button onclick="clearAllData()" style="background:#fff; border:1px solid var(--danger); color:var(--danger); flex:1;">🗑️ Clear Data</button>
         </div>
 
         <div style="display:flex; gap:20px; flex-wrap:wrap;">
@@ -139,6 +140,11 @@
             </div>
         </div>
         <div id="pos-list" style="margin-top:15px;"></div>
+
+        <div class="toggle-container">
+            <input type="checkbox" id="show-stats-toggle" checked onchange="validateAndRefresh()">
+            <label for="show-stats-toggle">Show Duty/Break Minutes in Summary</label>
+        </div>
 
         <h4 style="margin: 20px 0 10px;">Staff Members</h4>
         <div id="staff-input-list"></div>
@@ -215,44 +221,49 @@
             end: row.querySelector('.staff-end').value,
             shiftId: row.querySelector('.staff-shift').value
         })).filter(s => s.name);
-        localStorage.setItem('julyGarden_Final_Clean', JSON.stringify({ positions, timeInterval, assignments, staff: staffData }));
+        
+        const showStats = document.getElementById('show-stats-toggle').checked;
+        localStorage.setItem('julyGarden_V3_Clean', JSON.stringify({ 
+            positions, timeInterval, assignments, staff: staffData, showStats 
+        }));
     }
 
     function loadSavedData() {
-        const saved = localStorage.getItem('julyGarden_Final_Clean');
+        const saved = localStorage.getItem('julyGarden_V3_Clean');
         if (!saved) return;
         const data = JSON.parse(saved);
         positions = data.positions || positions;
         assignments = data.assignments || {};
         timeInterval = data.timeInterval || 15;
         document.getElementById('interval-select').value = timeInterval;
+        document.getElementById('show-stats-toggle').checked = data.showStats !== undefined ? data.showStats : true;
         renderPositions();
         document.getElementById('staff-input-list').innerHTML = '';
         data.staff.forEach(s => addNewStaff(s));
     }
 
-    function clearAllData() { if(confirm("Start fresh?")) { localStorage.clear(); location.reload(); } }
+    function clearAllData() { if(confirm("Clear all data?")) { localStorage.clear(); location.reload(); } }
 
     function addNewStaff(saved = null) {
         const div = document.createElement('div');
         div.className = 'staff-row';
         div.innerHTML = `
-            <input type="text" placeholder="Worker Name" class="staff-name" value="${saved?.name || ''}" readonly>
-            <button onclick="renameWorkerPrompt('${saved?.name || ''}', this)" style="background:#eee; font-size:11px;">Name</button>
+            <input type="text" class="staff-name" value="${saved?.name || ''}" readonly>
+            <button onclick="renameWorkerPrompt('${saved?.name || ''}', this)" style="background:none; font-size:18px; padding:0 8px;">✏️</button>
             <select class="staff-shift" onchange="applyPreset(this)">
                 <option value="">Shift</option>
                 ${Object.keys(shiftPresets).map(k => `<option value="${k}" ${saved?.shiftId === k ? 'selected' : ''}>${k}</option>`).join('')}
             </select>
             <input type="time" class="staff-start" value="${saved?.start || ''}" onchange="validateAndRefresh()">
             <input type="time" class="staff-end" value="${saved?.end || ''}" onchange="validateAndRefresh()">
-            <button onclick="this.parentElement.remove();validateAndRefresh()" style="color:var(--danger); background:none; font-size:24px; padding:0 10px;">&times;</button>
+            <button onclick="this.parentElement.remove();validateAndRefresh()" style="color:var(--danger); background:none; font-size:24px; padding:0 5px;">&times;</button>
         `;
         document.getElementById('staff-input-list').appendChild(div);
     }
 
     function renameWorkerPrompt(oldName, btn) {
         let input = btn.parentElement.querySelector('.staff-name');
-        let newName = prompt(`Update name?`, oldName || "");
+        let newName = prompt(`Enter new name:`, oldName || "");
         if(newName && newName !== oldName) {
             if(oldName) Object.keys(assignments).forEach(k => { if(assignments[k] === oldName) assignments[k] = newName; });
             input.value = newName;
@@ -317,7 +328,7 @@
         staffData.forEach(s => csv += `META_STAFF,${s.name},${s.start},${s.end},${s.shiftId || ''}\n`);
         const a = document.createElement('a');
         a.href = window.URL.createObjectURL(new Blob([csv], { type: 'text/csv' })); 
-        a.download = 'staff_roster.csv'; a.click();
+        a.download = 'roster_studio.csv'; a.click();
     }
 
     function setView(sTime, eTime) {
@@ -387,6 +398,8 @@
 
     function updateSummary() {
         let html = '';
+        const showStats = document.getElementById('show-stats-toggle').checked;
+        
         staffData.forEach(worker => {
             let workMin = 0, timeline = [];
             let totalShiftMin = getMinutesBetween(worker.start, worker.end);
@@ -412,14 +425,15 @@
 
             html += `<div class="summary-item">
                 <div style="margin-bottom:10px;"><strong style="font-size:1.1em;">${worker.name}</strong></div>
+                ${showStats ? `
                 <div style="display:flex; gap:5px; margin-bottom:12px;">
                     <span class="stat-badge">Duty: ${workMin}m</span>
                     <span class="stat-badge" style="background:#f0fdf4; color:#166534; border:1px solid #dcfce7">Break: ${breakMin < 0 ? 0 : breakMin}m</span>
-                </div>
+                </div>` : ''}
                 ${merged.map(m => `<div class="timeline-row"><span>${m.s}-${m.e}</span><span style="font-weight:700; color:${m.p==='Break'?'#94a3b8':'var(--primary)'}">${m.p}</span></div>`).join('')}
             </div>`;
         });
-        document.getElementById('summary-area').innerHTML = `<h3 style="margin-top:0">Live Roster Summary</h3><div id="summary-list" style="display:flex; flex-wrap:wrap; gap:15px;">${html}</div>`;
+        document.getElementById('summary-area').innerHTML = `<h3 style="margin-top:0">Roster Summary</h3><div id="summary-list" style="display:flex; flex-wrap:wrap; gap:15px;">${html}</div>`;
     }
 
     function getMinutesBetween(start, end) {
